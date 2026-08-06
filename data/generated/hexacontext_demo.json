@@ -1,0 +1,1668 @@
+{
+  "dataset_metadata": {
+    "dataset_id": "hexacontext-manufacturing-demo-v1",
+    "created_for": "Sneha HexaContext MVP",
+    "synthetic": true,
+    "contains_real_company_or_client_data": false,
+    "case_count": 12,
+    "profile_id": "manufacturing_lot_disposition_v1",
+    "description": "Designed synthetic cases for evaluating governed hybrid context retrieval and human-reviewed lot disposition readiness."
+  },
+  "decision_profile": {
+    "profile_id": "manufacturing_lot_disposition_v1",
+    "decision": "Manufacturing lot disposition readiness",
+    "required_signals": [
+      "inspection_passed",
+      "critical_defect_count",
+      "coa_verified",
+      "calibration_valid",
+      "supplier_consecutive_failures",
+      "revision_match",
+      "deviation_open",
+      "relationship_evidence_stale"
+    ],
+    "rules": [
+      "Failed inspection or any critical defect places the lot on HOLD.",
+      "Unverified certificate, expired calibration, revision mismatch, or three consecutive connected supplier failures places the lot on HOLD.",
+      "Open deviations, stale relationship evidence, conflicting narratives, or missing mandatory evidence require ESCALATION.",
+      "Only authorized evidence can enter the packet; a human quality reviewer owns the final disposition."
+    ]
+  },
+  "lots": [
+    {
+      "lot_id": "HX-LOT-1001",
+      "part_id": "HX-PART-001",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-001",
+      "machine_id": "HX-EQP-001",
+      "material": "Titanium fastener",
+      "quantity": 275,
+      "manufactured_at": "2026-08-02T08:00:00Z",
+      "scenario": "Complete, current, mutually consistent evidence",
+      "expected_disposition": "PASS",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1001-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1001-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1001-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1001-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1001-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1001-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-001 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1001-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1001-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1001-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1001-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1001-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1001-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1001",
+          "type": "produced_by",
+          "to": "HX-SUP-001"
+        },
+        {
+          "from": "HX-LOT-1001",
+          "type": "contains_part",
+          "to": "HX-PART-001"
+        },
+        {
+          "from": "HX-LOT-1001",
+          "type": "inspected_with",
+          "to": "HX-EQP-001"
+        },
+        {
+          "from": "HX-PART-001",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1002",
+      "part_id": "HX-PART-002",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-002",
+      "machine_id": "HX-EQP-002",
+      "material": "Sterile polymer housing",
+      "quantity": 300,
+      "manufactured_at": "2026-08-03T08:00:00Z",
+      "scenario": "Three connected supplier failures for the same part family",
+      "expected_disposition": "HOLD",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1002-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1002-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1002-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1002-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1002-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1002-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-002 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1002-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1002-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 3,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1002-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1002-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1002-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1002-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1002",
+          "type": "produced_by",
+          "to": "HX-SUP-002"
+        },
+        {
+          "from": "HX-LOT-1002",
+          "type": "contains_part",
+          "to": "HX-PART-002"
+        },
+        {
+          "from": "HX-LOT-1002",
+          "type": "inspected_with",
+          "to": "HX-EQP-002"
+        },
+        {
+          "from": "HX-PART-002",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1003",
+      "part_id": "HX-PART-003",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-003",
+      "machine_id": "HX-EQP-003",
+      "material": "Control-board assembly",
+      "quantity": 325,
+      "manufactured_at": "2026-08-04T08:00:00Z",
+      "scenario": "Critical defect found in direct inspection evidence",
+      "expected_disposition": "HOLD",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1003-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1003-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 1
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1003-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1003-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1003-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1003-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-003 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1003-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1003-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1003-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1003-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1003-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1003-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1003",
+          "type": "produced_by",
+          "to": "HX-SUP-003"
+        },
+        {
+          "from": "HX-LOT-1003",
+          "type": "contains_part",
+          "to": "HX-PART-003"
+        },
+        {
+          "from": "HX-LOT-1003",
+          "type": "inspected_with",
+          "to": "HX-EQP-003"
+        },
+        {
+          "from": "HX-PART-003",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1004",
+      "part_id": "HX-PART-004",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-001",
+      "machine_id": "HX-EQP-004",
+      "material": "Precision valve",
+      "quantity": 350,
+      "manufactured_at": "2026-08-01T08:00:00Z",
+      "scenario": "Inspection equipment calibration expired",
+      "expected_disposition": "HOLD",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1004-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1004-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1004-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1004-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1004-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1004-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-004 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1004-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1004-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1004-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1004-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1004-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1004-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1004",
+          "type": "produced_by",
+          "to": "HX-SUP-001"
+        },
+        {
+          "from": "HX-LOT-1004",
+          "type": "contains_part",
+          "to": "HX-PART-004"
+        },
+        {
+          "from": "HX-LOT-1004",
+          "type": "inspected_with",
+          "to": "HX-EQP-004"
+        },
+        {
+          "from": "HX-PART-004",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1005",
+      "part_id": "HX-PART-001",
+      "part_revision": "B",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-002",
+      "machine_id": "HX-EQP-001",
+      "material": "Titanium fastener",
+      "quantity": 375,
+      "manufactured_at": "2026-08-02T08:00:00Z",
+      "scenario": "Observed part revision does not match released revision",
+      "expected_disposition": "HOLD",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1005-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1005-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1005-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1005-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1005-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1005-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-001 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1005-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1005-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1005-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1005-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1005-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1005-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1005",
+          "type": "produced_by",
+          "to": "HX-SUP-002"
+        },
+        {
+          "from": "HX-LOT-1005",
+          "type": "contains_part",
+          "to": "HX-PART-001"
+        },
+        {
+          "from": "HX-LOT-1005",
+          "type": "inspected_with",
+          "to": "HX-EQP-001"
+        },
+        {
+          "from": "HX-PART-001",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1006",
+      "part_id": "HX-PART-002",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-003",
+      "machine_id": "HX-EQP-002",
+      "material": "Sterile polymer housing",
+      "quantity": 400,
+      "manufactured_at": "2026-08-03T08:00:00Z",
+      "scenario": "Certificate of analysis cannot be verified",
+      "expected_disposition": "HOLD",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1006-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1006-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1006-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1006-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1006-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1006-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-002 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1006-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1006-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1006-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1006-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1006-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1006-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1006",
+          "type": "produced_by",
+          "to": "HX-SUP-003"
+        },
+        {
+          "from": "HX-LOT-1006",
+          "type": "contains_part",
+          "to": "HX-PART-002"
+        },
+        {
+          "from": "HX-LOT-1006",
+          "type": "inspected_with",
+          "to": "HX-EQP-002"
+        },
+        {
+          "from": "HX-PART-002",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1007",
+      "part_id": "HX-PART-003",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-001",
+      "machine_id": "HX-EQP-003",
+      "material": "Control-board assembly",
+      "quantity": 425,
+      "manufactured_at": "2026-08-04T08:00:00Z",
+      "scenario": "Final inspection failed",
+      "expected_disposition": "HOLD",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1007-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1007-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": false,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1007-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1007-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1007-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1007-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-003 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1007-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1007-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1007-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1007-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1007-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1007-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1007",
+          "type": "produced_by",
+          "to": "HX-SUP-001"
+        },
+        {
+          "from": "HX-LOT-1007",
+          "type": "contains_part",
+          "to": "HX-PART-003"
+        },
+        {
+          "from": "HX-LOT-1007",
+          "type": "inspected_with",
+          "to": "HX-EQP-003"
+        },
+        {
+          "from": "HX-PART-003",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1008",
+      "part_id": "HX-PART-004",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-002",
+      "machine_id": "HX-EQP-004",
+      "material": "Precision valve",
+      "quantity": 450,
+      "manufactured_at": "2026-08-01T08:00:00Z",
+      "scenario": "Open deviation linked through the context graph",
+      "expected_disposition": "ESCALATE",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1008-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1008-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1008-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1008-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1008-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1008-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-004 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1008-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1008-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1008-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1008-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1008-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1008-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": true
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1008",
+          "type": "produced_by",
+          "to": "HX-SUP-002"
+        },
+        {
+          "from": "HX-LOT-1008",
+          "type": "contains_part",
+          "to": "HX-PART-004"
+        },
+        {
+          "from": "HX-LOT-1008",
+          "type": "inspected_with",
+          "to": "HX-EQP-004"
+        },
+        {
+          "from": "HX-PART-004",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1009",
+      "part_id": "HX-PART-001",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-003",
+      "machine_id": "HX-EQP-001",
+      "material": "Titanium fastener",
+      "quantity": 475,
+      "manufactured_at": "2026-08-02T08:00:00Z",
+      "scenario": "Narrative evidence conflicts with structured inspection",
+      "expected_disposition": "ESCALATE",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1009-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1009-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1009-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1009-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1009-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1009-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-001 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1009-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1009-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1009-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1009-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1009-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1009-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1009-NOTE",
+          "title": "Operator shift note",
+          "evidence_type": "narrative_note",
+          "source_system": "Manufacturing Log",
+          "source_record_id": "SRC-HX-LOT-1009-NOTE",
+          "authority": "signed_operator_note",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "general",
+          "retrieval_scope": "narrative",
+          "summary": "The narrative reports seal damage that conflicts with the structured inspection result.",
+          "signals": {
+            "narrative_conflict": true
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1009",
+          "type": "produced_by",
+          "to": "HX-SUP-003"
+        },
+        {
+          "from": "HX-LOT-1009",
+          "type": "contains_part",
+          "to": "HX-PART-001"
+        },
+        {
+          "from": "HX-LOT-1009",
+          "type": "inspected_with",
+          "to": "HX-EQP-001"
+        },
+        {
+          "from": "HX-PART-001",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1010",
+      "part_id": "HX-PART-002",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-001",
+      "machine_id": "HX-EQP-002",
+      "material": "Sterile polymer housing",
+      "quantity": 500,
+      "manufactured_at": "2026-08-03T08:00:00Z",
+      "scenario": "Connected supplier evidence is stale",
+      "expected_disposition": "ESCALATE",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1010-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1010-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1010-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1010-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1010-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1010-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-002 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1010-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1010-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1010-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1010-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1010-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1010-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1010",
+          "type": "produced_by",
+          "to": "HX-SUP-001"
+        },
+        {
+          "from": "HX-LOT-1010",
+          "type": "contains_part",
+          "to": "HX-PART-002"
+        },
+        {
+          "from": "HX-LOT-1010",
+          "type": "inspected_with",
+          "to": "HX-EQP-002"
+        },
+        {
+          "from": "HX-PART-002",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1011",
+      "part_id": "HX-PART-003",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-002",
+      "machine_id": "HX-EQP-003",
+      "material": "Control-board assembly",
+      "quantity": 525,
+      "manufactured_at": "2026-08-04T08:00:00Z",
+      "scenario": "Required supplier history is missing",
+      "expected_disposition": "ESCALATE",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1011-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1011-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1011-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1011-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1011-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1011-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-003 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1011-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1011-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1011-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1011-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1011",
+          "type": "produced_by",
+          "to": "HX-SUP-002"
+        },
+        {
+          "from": "HX-LOT-1011",
+          "type": "contains_part",
+          "to": "HX-PART-003"
+        },
+        {
+          "from": "HX-LOT-1011",
+          "type": "inspected_with",
+          "to": "HX-EQP-003"
+        },
+        {
+          "from": "HX-PART-003",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    },
+    {
+      "lot_id": "HX-LOT-1012",
+      "part_id": "HX-PART-004",
+      "part_revision": "C",
+      "approved_revision": "C",
+      "supplier_id": "HX-SUP-003",
+      "machine_id": "HX-EQP-004",
+      "material": "Precision valve",
+      "quantity": 550,
+      "manufactured_at": "2026-08-01T08:00:00Z",
+      "scenario": "Authorized evidence passes; restricted distractor must be excluded",
+      "expected_disposition": "PASS",
+      "evidence": [
+        {
+          "evidence_id": "EV-HX-LOT-1012-INSPECTION",
+          "title": "Final inspection result",
+          "evidence_type": "inspection",
+          "source_system": "QMS",
+          "source_record_id": "SRC-HX-LOT-1012-INSPECTION",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Inspection measurements and defect disposition for this lot.",
+          "signals": {
+            "inspection_passed": true,
+            "critical_defect_count": 0
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1012-COA",
+          "title": "Certificate of analysis verification",
+          "evidence_type": "certificate",
+          "source_system": "Supplier Portal",
+          "source_record_id": "SRC-HX-LOT-1012-COA",
+          "authority": "verified_supplier_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "direct",
+          "summary": "Certificate identity, lot linkage, and acceptance state.",
+          "signals": {
+            "coa_verified": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1012-CAL",
+          "title": "Inspection equipment calibration",
+          "evidence_type": "equipment_calibration",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1012-CAL",
+          "authority": "approved_calibration_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Calibration status for equipment HX-EQP-004 used by the lot inspection.",
+          "signals": {
+            "calibration_valid": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1012-SUPPLIER",
+          "title": "Connected supplier quality history",
+          "evidence_type": "supplier_history",
+          "source_system": "Supplier Quality Hub",
+          "source_record_id": "SRC-HX-LOT-1012-SUPPLIER",
+          "authority": "approved_supplier_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Recent consecutive outcomes for the same supplier and part family.",
+          "signals": {
+            "supplier_consecutive_failures": 0,
+            "relationship_evidence_stale": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1012-REV",
+          "title": "Part and work-order revision alignment",
+          "evidence_type": "revision_control",
+          "source_system": "PLM",
+          "source_record_id": "SRC-HX-LOT-1012-REV",
+          "authority": "released_engineering_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "rev-C",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Observed part revision compared with the currently released revision.",
+          "signals": {
+            "revision_match": true
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1012-DEV",
+          "title": "Open deviation relationship",
+          "evidence_type": "deviation",
+          "source_system": "eQMS",
+          "source_record_id": "SRC-HX-LOT-1012-DEV",
+          "authority": "approved_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "quality",
+          "retrieval_scope": "relationship",
+          "summary": "Open deviation or exception linked to the lot, part, supplier, or equipment.",
+          "signals": {
+            "deviation_open": false
+          }
+        },
+        {
+          "evidence_id": "EV-HX-LOT-1012-RESTRICTED",
+          "title": "Restricted employment note",
+          "evidence_type": "restricted_note",
+          "source_system": "HR Case System",
+          "source_record_id": "SRC-HX-LOT-1012-RESTRICTED",
+          "authority": "non_quality_record",
+          "observed_at": "2026-08-05T12:00:00Z",
+          "source_version": "v1",
+          "access_scope": "restricted_hr",
+          "retrieval_scope": "narrative",
+          "summary": "Irrelevant restricted information that must never influence lot disposition.",
+          "signals": {
+            "narrative_conflict": true
+          }
+        }
+      ],
+      "relationships": [
+        {
+          "from": "HX-LOT-1012",
+          "type": "produced_by",
+          "to": "HX-SUP-003"
+        },
+        {
+          "from": "HX-LOT-1012",
+          "type": "contains_part",
+          "to": "HX-PART-004"
+        },
+        {
+          "from": "HX-LOT-1012",
+          "type": "inspected_with",
+          "to": "HX-EQP-004"
+        },
+        {
+          "from": "HX-PART-004",
+          "type": "governed_by",
+          "to": "HX-POLICY-LOT-001"
+        }
+      ]
+    }
+  ]
+}
