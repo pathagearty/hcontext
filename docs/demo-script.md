@@ -1,117 +1,116 @@
 # Stakeholder Demo Script
 
-> **Demo status:** this script covers the implemented deterministic local harness. The target live stakeholder demo is the two-column Foundry Direct vs With HexaContext comparison in [`foundry/orchestration-and-evaluation.md`](foundry/orchestration-and-evaluation.md). Retain this script as the reliable regression/fallback walkthrough.
+> **Demo status:** the primary UI is a deterministic local comparison preview. It is visibly labeled `SIMULATED_LOCAL`; it does not invoke the saved Foundry agents or claim actual billed cost. Use it to validate the evaluation experience and metric contract before live integration.
 
-Target length: **8–10 minutes**. Use the local mock provider first. A live Foundry/Bedrock call is a separate integration proof and should never replace the reliable product walkthrough.
+Target length: **5–7 minutes**.
 
-## 1. Frame the problem — 45 seconds
+## 1. Frame the question — 45 seconds
 
-> Existing agents often see the active record but miss connected supplier, equipment, revision and narrative context. Sending every possible record to a frontier model is costly and hard to govern. HexaContext compiles the minimum authorized evidence for one decision profile, applies deterministic rules and returns a traceable packet for human review.
+Open the app and lead with the question shown in the hero:
 
-Point to the **MVP thesis** and **decision boundary** cards.
+> Does HexaContext improve evidence and decision quality enough to justify its extra work?
 
-## 2. Positive path — 90 seconds
+Point out the local-preview banner. The product is designed to show a negative, neutral or positive result honestly—not to make HexaContext look better by default.
 
-1. Select `HX-LOT-1001`.
-2. Leave retrieval on **Hybrid** and provider on **Deterministic mock**.
-3. Show the lot, supplier, part, equipment and policy relationship map.
-4. Click **Compile governed packet**.
-5. Point out:
-   - deterministic `PASS` readiness;
-   - exact retrieval routes;
-   - all policy checks;
-   - source-backed evidence count;
-   - required human confirmation;
-   - model is explanation-only.
+## 2. Freeze the comparison controls — 45 seconds
 
-Say explicitly: `PASS` means ready for authorized review, not autonomous lot release.
+Show the selected manufacturing lot, actor, immutable snapshot and Decision Profile. Explain that the backend owns these controls and runs the same request, permissions, evidence snapshot and Manufacturing decision rules in both arms.
 
-## 3. Graph-value case — 90 seconds
+The browser exposes neutral lot labels before scoring and does not receive the private scenario label or expected answer.
 
-1. Select `HX-LOT-1002`.
-2. Compile with **Exact only**.
-3. Show that the active-record condition lacks connected supplier/calibration/revision context and escalates because evidence is incomplete.
-4. Switch to **Hybrid** and recompile.
-5. Show the source-backed `HOLD` based on three connected supplier failures.
+## 3. Run the comparison — 90 seconds
 
-Message: the graph is useful because a specific relationship changes a consequential result—not because a graph looks impressive.
+Leave `Manufacturing lot 009` selected and click **Run comparison**.
 
-## 4. Hybrid-value case — 90 seconds
+Walk through the pipeline:
 
-1. Select `HX-LOT-1009`.
-2. Compile with **Graph + exact**.
-3. Then compile with **Hybrid**.
-4. Show that the narrative operator note conflicts with structured inspection and triggers `ESCALATE` only when narrative evidence is included.
+```text
+Foundry Direct contract preview
+  -> Manufacturing reasoning
 
-Message: neither graph nor search is universally superior; the decision profile chooses and fuses the minimum routes.
+With HexaContext contract preview
+  -> context compilation
+  -> ContextPacket
+  -> the same Manufacturing reasoning
+```
 
-## 5. Authorization case — 60 seconds
+Then lead with the run conclusion. In the current local preview, both arms make the same correct decision and find the same evidence, while the enhanced path uses one additional model call and more tokens/latency.
 
-1. Select `HX-LOT-1012`.
-2. Compile with **Hybrid**.
-3. Point to `Excluded: 1` in the packet trace.
-4. Confirm that no restricted content appears in the source list, packet or model input.
+That is an intentional, useful result: the UI does not manufacture a HexaContext advantage.
 
-Message: authorization occurs before evidence fusion and model invocation.
+## 4. Show what each path did — 90 seconds
 
-## 6. Evaluation lab — 90 seconds
+Use the **What each path did** section as the basic product demo before discussing scores.
 
-Scroll to **Evaluation lab**.
+On the direct side, explain that the Manufacturing Agent owns both jobs: it receives the controlled request, gathers authorized evidence through the approved tool contracts, applies the readiness profile and returns a decision with citations.
 
-Explain:
+On the enhanced side, explain the division of responsibility: HexaContext gathers, checks and packages the evidence into a typed `ContextPacket`; the same Manufacturing Agent then owns the manufacturing decision.
 
-- the same 12 designed cases run under exact, graph, search and hybrid conditions;
-- agreement, false passes and over-escalations are calculated live by the backend;
-- the expected answer key is separate from model prompts;
-- 100% hybrid fixture agreement validates the current designed harness only—not production quality performance.
+Point to the live record/tool counts, evidence classes, packet completeness, findings, decision and citation count. Close with the boundary shown beneath the lanes:
 
-## 7. Architecture and validity — 60 seconds
+- what changed is the additional context-compilation and packet handoff;
+- what stayed fixed is the request, actor, permissions, snapshot, tools, profile, business rules and Manufacturing Agent contract.
 
-Show the five-stage architecture:
+## 5. Inspect quality and overhead — 90 seconds
 
-1. typed decision request;
-2. bounded hybrid context;
-3. deterministic policy;
-4. optional model explanation;
-5. human action.
+Compare the two equal-weight result cards:
 
-Then show **Measured in this MVP**, **Not yet claimed**, and **Next validation gate**.
+- decision and hidden-answer correctness;
+- required-evidence coverage and valid citations;
+- missing, stale and conflicting evidence;
+- model calls, tool calls, tokens and end-to-end latency;
+- the HexaContext `ContextPacket` summary;
+- expandable evidence, tool timeline and technical metrics.
 
-## 8. Close with the decision ask — 30 seconds
+Point out that enhanced totals include both HexaContext compilation and downstream Manufacturing reasoning. Cost is shown as **Unavailable** because no approved versioned model rates are configured; the app does not invent a per-query Supabase cost.
 
-> The next question is not whether we should build a universal context platform. It is whether a qualified workflow owner agrees that this decision profile and its relationship evidence are valuable enough to test against one approved source-system seam. If yes, we extend; if the substrate already exists, we integrate or merge rather than duplicate it.
+## 6. Show a missing-evidence case — 60 seconds
 
-## Optional live-provider proof
+Select `Manufacturing lot 011` and click **Run comparison**.
 
-Only after the local walkthrough succeeds:
+Both arms should `ESCALATE`, identify `Supplier Part Family History` as missing, and match the private expected disposition. The result demonstrates that absence remains unknown rather than being converted into a pass.
 
-1. verify the endpoint/provider shows **Configured · untested**;
-2. select the approved live provider;
-3. run one positive and one HOLD/ESCALATE case;
-4. capture provider request/trace evidence server-side;
-5. repeat an invalid-network or invalid-endpoint test;
-6. show the explicit error and absence of mock fallback.
+## 7. Review the hidden evaluator — 45 seconds
 
-Do not call the provider integrated if credentials, network, endpoint contract or trace evidence are still pending.
+Show that scoring appears only after both arm results exist. It checks:
+
+- correct disposition and critical false PASS;
+- required-evidence recall and citation validity;
+- missing, stale and conflict detection;
+- restricted and cross-tenant leakage.
+
+For a future free-form request without an answer key, the correct state is `Not automatically scored — human review required`; the app must never fabricate correctness.
+
+## 8. Read the 15-case aggregate — 60 seconds
+
+Scroll to **All 15 controlled cases**. The current local preview reports equal designed-case quality and higher enhanced-path overhead. This is the decision-useful takeaway from the implemented preview, not a failure of the demo.
+
+State the claim boundary clearly:
+
+> These are deterministic executions against designed synthetic data. A live Foundry comparison is required before claiming model-quality lift, production accuracy, customer ROI or actual per-run billed cost.
+
+## 9. Close with the next validation gate — 30 seconds
+
+The next step is deliberately narrow: on the approved Foundry-connected computer, connect both saved agents to the same read-only Supabase tool plane, replace simulated usage with provider-reported usage and backend timing, and reconcile estimated model cost with Azure billing later.
 
 ## Anticipated questions
 
-### Why not just use RAG?
+### Why does HexaContext not win in this preview?
 
-Exact/search retrieval is one route. The demo tests when bounded relationships and deterministic policy add value beyond document similarity.
+Both arms receive the same complete authorized evidence. Giving the baseline less data would invalidate the comparison. HexaContext must earn a measurable advantage during live agent execution through better planning, selection, validation or packaging.
 
-### Why a graph database?
+### Are the token and latency numbers real?
 
-It is not yet assumed. The MVP proves relationship query classes first. FalkorDB should be adopted only if those classes outperform a simpler approved relational/managed approach enough to justify it.
+They are deterministic preview estimates and are labeled that way. The live path will sum provider usage across every Foundry continuation and measure each model/tool stage in the backend.
 
-### Why a small model?
+### Is estimated model cost the Azure bill?
 
-A smaller profile model is a future optimization hypothesis for bounded explanation or normalization. The MVP does not require fine-tuning and does not put current business facts into weights.
+No. Standard token pricing can support an immediate estimate after approved rates are configured. Azure Cost Management remains the delayed billing source of truth, and capacity-based deployments may not have a meaningful per-run token cost.
 
-### Is this a new agent platform?
+### Why is there no Supabase query cost?
 
-No. HexaContext returns a typed packet to an existing agent/workflow and relies on existing identity, runtime and system-of-record ownership.
+One small query does not have a defensible exact project cost. The UI reports tool-call count, returned records, latency, errors and authorization exclusions; database infrastructure cost remains separate.
 
-### Are the metrics real?
+### Does `PASS` release a lot?
 
-They are real executions against designed synthetic fixtures. They are not production accuracy, ROI or customer-validation claims.
+No. It means ready for authorized human review. A qualified reviewer retains release, rejection, deviation and remediation authority.

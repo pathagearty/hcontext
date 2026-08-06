@@ -1,0 +1,622 @@
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from functools import lru_cache
+import hashlib
+from statistics import median
+import time
+import uuid
+from typing import Any
+
+from data.generate_supabase_v1 import (
+    PRIMARY_SITE,
+    PRIMARY_TENANT,
+    build_dataset,
+)
+
+from .comparison_models import (
+    ArmAggregate,
+    ArmEvaluation,
+    ArmMetrics,
+    ComparisonArmResult,
+    ComparisonCase,
+    ComparisonDeltas,
+    ComparisonEvaluation,
+    ComparisonRequest,
+    ComparisonResult,
+    CostEstimate,
+    DecisionSummary,
+    EvaluationStatus,
+    EvaluationSummary,
+    EvidenceSummary,
+    FindingSummary,
+    FrozenControls,
+    MetricAvailability,
+    RunStatus,
+    StageMetric,
+    ToolTraceItem,
+)
+from .pricing import estimate_model_cost
+from .supabase_gateway import TOOL_CONTRACT_VERSION
+from .telemetry import NormalizedUsage, simulated_usage
+
+
+_RUNS: dict[str, ComparisonResult] = {}
+_AUTHORIZED_SCOPES = frozenset({"quality", "general"})
+
+
+@lru_cache(maxsize=1)
+def _runtime_dataset() -> dict[str, list[dict[str, Any]]]:
+    runtime, _ = build_dataset()
+    return runtime
+
+
+@lru_cache(maxsize=1)
+def _evaluator_dataset() -> dict[str, list[dict[str, Any]]]:
+    _, evaluator = build_dataset()
+    return evaluator
+
+
+def comparison_cases() -> list[ComparisonCase]:
+    lots = [
+        row
+        for row in _runtime_dataset()["manufacturing_lots"]
+        if row["tenant_id"] == PRIMARY_TENANT
+    ]
+    return [
+        ComparisonCase(lot_id=row["lot_id"], label=f"Manufacturing lot {row['lot_id'][-3:]}")
+        for row in sorted(lots, key=lambda item: item["lot_id"])
+    ]
+
+
+def _iso(value: str) -> datetime:
+    return datetime.fromisoformat(value.replace("Z", "+00:00"))
+
+
+def _authorized(row: dict[str, Any]) -> bool:
+    return row.get("tenant_id") == PRIMARY_TENANT and set(row.get("required_scopes", [])) <= _AUTHORIZED_SCOPES
+
+
+def _rows(table: str, **matches: Any) -> list[dict[str, Any]]:
+    return [
+        row
+        for row in _runtime_dataset()[table]
+        if _authorized(row) and all(row.get(key) == value for key, value in matches.items())
+    ]
+
+
+_EVIDENCE_TITLES = {
+    "lot_record": "Manufacturing lot record",
+    "final_inspection": "Final inspection",
+    "certificate_of_analysis": "Certificate of analysis",
+    "equipment_calibration": "Equipment calibration",
+    "released_revision_alignment": "Released engineering revision",
+    "supplier_part_family_history": "Supplier quality history",
+    "open_deviation_check": "Connected deviation",
+    "authorized_narrative_conflict_check": "Authorized manufacturing note",
+}
+
+
+def _evidence(evidence_class: str, row: dict[str, Any]) -> EvidenceSummary:
+    return EvidenceSummary(
+        evidence_class=evidence_class,
+        source_record_id=row["source_record_id"],
+        title=_EVIDENCE_TITLES[evidence_class],
+        authority=row["authority"],
+        observed_at=row["observed_at"],
+    )
+
+
+def _collect_case(lot_id: str) -> tuple[dict[str, Any], list[EvidenceSummary], list[tuple[str, int]]]:
+    lots = _rows("manufacturing_lots", lot_id=lot_id)
+    if len(lots) != 1:
+        raise KeyError(lot_id)
+    lot = lots[0]
+    inspections = _rows("inspections", lot_id=lot_id)
+    certificates = _rows("certificates_of_analysis", lot_id=lot_id)
+    calibrations = _rows("calibration_records", equipment_id=lot["inspection_equipment_id"])
+    revisions = _rows("engineering_revisions", part_id=lot["part_id"])
+    supplier_events = _rows(
+        "supplier_quality_events",
+        supplier_id=lot["supplier_id"],
+        part_id=lot["part_id"],
+    )
+    deviations = [
+        row
+        for row in _rows("deviations")
+        if row.get("lot_id") == lot_id
+        or row.get("part_id") == lot["part_id"]
+        or row.get("supplier_id") == lot["supplier_id"]
+        or row.get("equipment_id") == lot["inspection_equipment_id"]
+    ]
+    notes = [
+        row
+        for row in _rows("manufacturing_notes")
+        if row.get("lot_id") == lot_id
+        or row.get("part_id") == lot["part_id"]
+        or row.get("equipment_id") == lot["inspection_equipment_id"]
+    ]
+
+    evidence = [_evidence("lot_record", lot)]
+    evidence.extend(_evidence("final_inspection", row) for row in inspections)
+    evidence.extend(_evidence("certificate_of_analysis", row) for row in certificates)
+    evidence.extend(_evidence("equipment_calibration", row) for row in calibrations)
+    evidence.extend(_evidence("released_revision_alignment", row) for row in revisions)
+    evidence.extend(_evidence("supplier_part_family_history", row) for row in supplier_events)
+    evidence.extend(_evidence("open_deviation_check", row) for row in deviations if row["status"] == "OPEN")
+    evidence.extend(_evidence("authorized_narrative_conflict_check", row) for row in notes)
+    evidence.sort(key=lambda item: (item.evidence_class, item.source_record_id))
+
+    tool_counts = [
+        ("get_decision_profile", 1),
+        ("get_lot_record", 1 + len(inspections) + len(certificates)),
+        ("get_supplier_quality_history", len(supplier_events)),
+        ("get_equipment_calibration", len(calibrations)),
+        ("get_released_part_revision", len(revisions)),
+        ("get_open_deviations", len([row for row in deviations if row["status"] == "OPEN"])),
+        ("search_manufacturing_notes", len(notes)),
+    ]
+    detail = {
+        "lot": lot,
+        "inspections": inspections,
+        "certificates": certificates,
+        "calibrations": calibrations,
+        "revisions": revisions,
+        "supplier_events": supplier_events,
+        "deviations": deviations,
+        "notes": notes,
+    }
+    return detail, evidence, tool_counts
+
+
+def _decision(detail: dict[str, Any], evidence: list[EvidenceSummary]) -> tuple[DecisionSummary, FindingSummary]:
+    as_of = _iso(_runtime_dataset()["dataset_snapshots"][0]["as_of_time"])
+    hold_reasons: list[str] = []
+    escalation_reasons: list[str] = []
+    missing: list[str] = []
+    stale: list[str] = []
+    conflicts: list[str] = []
+    conflict_ids: list[str] = []
+
+    inspections = detail["inspections"]
+    if not inspections:
+        missing.append("final_inspection")
+    elif any(row["result"] == "FAILED" or row["critical_defect_count"] > 0 for row in inspections):
+        hold_reasons.append("Final inspection contains a critical failure.")
+
+    certificates = detail["certificates"]
+    if not certificates:
+        missing.append("certificate_of_analysis")
+    elif any(row["verification_status"] != "VERIFIED" for row in certificates):
+        hold_reasons.append("The certificate of analysis is not verified.")
+
+    calibrations = detail["calibrations"]
+    if not calibrations:
+        missing.append("equipment_calibration")
+    elif any(row["calibration_status"] != "VALID" or _iso(row["valid_until"]) < as_of for row in calibrations):
+        hold_reasons.append("Inspection equipment calibration is not current.")
+
+    revisions = [
+        row
+        for row in detail["revisions"]
+        if row["release_status"] == "RELEASED"
+        and _iso(row["effective_from"]) <= as_of
+        and (row["effective_to"] is None or _iso(row["effective_to"]) > as_of)
+    ]
+    if not revisions:
+        missing.append("released_revision_alignment")
+    elif len(revisions) > 1:
+        conflicts.append("Multiple engineering revisions are simultaneously active and released.")
+        conflict_ids.extend(row["source_record_id"] for row in revisions)
+    elif detail["lot"]["observed_part_revision"] != revisions[0]["revision_code"]:
+        hold_reasons.append("The observed part revision does not match the released revision.")
+
+    supplier_events = sorted(detail["supplier_events"], key=lambda row: row["event_at"], reverse=True)
+    fresh_events = [row for row in supplier_events if (as_of - _iso(row["event_at"])).days <= 90]
+    if not supplier_events:
+        missing.append("supplier_part_family_history")
+    elif not fresh_events:
+        stale.extend(row["source_record_id"] for row in supplier_events)
+    elif len(fresh_events) >= 3 and all(row["outcome"] == "FAIL" for row in fresh_events[:3]):
+        hold_reasons.append("The three most recent supplier quality events failed.")
+
+    if any(row["status"] == "OPEN" for row in detail["deviations"]):
+        escalation_reasons.append("An open connected deviation requires review.")
+
+    conflict_notes = [
+        row
+        for row in detail["notes"]
+        if any(term in row["body"].casefold() for term in ("split seal", "seal fracture"))
+    ]
+    if conflict_notes:
+        conflicts.append("An authorized manufacturing note conflicts with the accepted inspection.")
+        conflict_ids.extend(row["source_record_id"] for row in inspections)
+        conflict_ids.extend(row["source_record_id"] for row in conflict_notes)
+
+    if missing:
+        escalation_reasons.append("Mandatory evidence is missing.")
+    if stale:
+        escalation_reasons.append("Mandatory supplier evidence is stale.")
+    if conflicts:
+        escalation_reasons.append("Conflicting authorized evidence requires review.")
+
+    if hold_reasons:
+        disposition = "HOLD"
+        reasons = hold_reasons + escalation_reasons
+    elif escalation_reasons:
+        disposition = "ESCALATE"
+        reasons = escalation_reasons
+    else:
+        disposition = "PASS"
+        reasons = ["All mandatory evidence is present, current, authorized, and consistent."]
+
+    actions = {
+        "PASS": "Quality reviewer confirms or rejects release readiness.",
+        "HOLD": "Quality reviewer maintains the hold and assigns remediation.",
+        "ESCALATE": "Quality reviewer resolves the missing, stale, or conflicting evidence.",
+    }
+    decision = DecisionSummary(
+        disposition=disposition,
+        summary=" ".join(reasons),
+        citations=[item.source_record_id for item in evidence],
+        human_action=actions[disposition],
+    )
+    return decision, FindingSummary(
+        missing=sorted(set(missing)),
+        stale=sorted(set(stale)),
+        conflicts=conflicts,
+        conflict_source_ids=sorted(set(conflict_ids)),
+    )
+
+
+def _timeline(stage: str, tool_counts: list[tuple[str, int]]) -> list[ToolTraceItem]:
+    return [
+        ToolTraceItem(
+            order=index,
+            stage=stage,
+            tool_name=name,
+            status="SUCCEEDED" if count else "NO_MATCH",
+            returned_count=count,
+            elapsed_ms=2 + count,
+        )
+        for index, (name, count) in enumerate(tool_counts, start=1)
+    ]
+
+
+def _combine_usage(*items: NormalizedUsage) -> NormalizedUsage:
+    complete = all(item.complete for item in items)
+    if not complete:
+        return NormalizedUsage(None, None, None, None, None, False)
+    inputs = sum(item.input_tokens or 0 for item in items)
+    outputs = sum(item.output_tokens or 0 for item in items)
+    return NormalizedUsage(inputs, outputs, inputs + outputs, 0, 0, True, True)
+
+
+def _unavailable_cost(reason: str = "Approved pricing is not configured for simulation models") -> CostEstimate:
+    return CostEstimate(
+        availability=MetricAvailability.UNAVAILABLE,
+        pricing_catalog_version="unconfigured-2026-08-06",
+        reason=reason,
+    )
+
+
+def _arm(
+    request: ComparisonRequest,
+    *,
+    enhanced: bool,
+) -> ComparisonArmResult:
+    detail, evidence, tool_counts = _collect_case(request.lot_id)
+    decision, findings = _decision(detail, evidence)
+    evidence_text = "|".join(item.source_record_id for item in evidence)
+    tool_time = sum(2 + count for _, count in tool_counts)
+
+    if enhanced:
+        packet_text = f"ContextPacket:{request.lot_id}:{evidence_text}:{findings.model_dump_json()}"
+        compiler_usage = simulated_usage(request.task + evidence_text, packet_text)
+        manufacturing_usage = simulated_usage(request.task + packet_text, decision.model_dump_json())
+        usage = _combine_usage(compiler_usage, manufacturing_usage)
+        compiler_ms = 12 + (compiler_usage.total_tokens or 0) // 40
+        manufacturing_ms = 10 + (manufacturing_usage.total_tokens or 0) // 40
+        stages = [
+            StageMetric(
+                stage="enhanced.hexacontext",
+                label="HexaContext compile",
+                model_calls=1,
+                tool_calls=len(tool_counts),
+                input_tokens=compiler_usage.input_tokens,
+                output_tokens=compiler_usage.output_tokens,
+                total_tokens=compiler_usage.total_tokens,
+                elapsed_ms=compiler_ms + tool_time,
+            ),
+            StageMetric(
+                stage="enhanced.manufacturing",
+                label="Manufacturing reasoning",
+                model_calls=1,
+                input_tokens=manufacturing_usage.input_tokens,
+                output_tokens=manufacturing_usage.output_tokens,
+                total_tokens=manufacturing_usage.total_tokens,
+                elapsed_ms=manufacturing_ms,
+            ),
+        ]
+        context_packet = {
+            "status": "COMPLETE" if not findings.missing else "INCOMPLETE",
+            "evidence_items": len(evidence),
+            "evidence_classes": len({item.evidence_class for item in evidence}),
+            "missing_classes": findings.missing,
+            "stale_records": len(findings.stale),
+            "conflicts": len(findings.conflicts),
+        }
+        label = "With HexaContext"
+        stage_name = "enhanced.hexacontext"
+        model_time = compiler_ms + manufacturing_ms
+        model_calls = 2
+    else:
+        direct_usage = simulated_usage(request.task + evidence_text, decision.model_dump_json())
+        usage = direct_usage
+        manufacturing_ms = 12 + (direct_usage.total_tokens or 0) // 40
+        stages = [
+            StageMetric(
+                stage="baseline.retrieval",
+                label="Direct retrieval",
+                tool_calls=len(tool_counts),
+                elapsed_ms=tool_time,
+            ),
+            StageMetric(
+                stage="baseline.manufacturing",
+                label="Manufacturing reasoning",
+                model_calls=1,
+                input_tokens=direct_usage.input_tokens,
+                output_tokens=direct_usage.output_tokens,
+                total_tokens=direct_usage.total_tokens,
+                elapsed_ms=manufacturing_ms,
+            ),
+        ]
+        context_packet = None
+        label = "Foundry Direct"
+        stage_name = "baseline.retrieval"
+        model_time = manufacturing_ms
+        model_calls = 1
+
+    # Exercise the estimator contract without presenting an invented simulation price.
+    cost = estimate_model_cost(
+        "simulation-hexacontext-v1" if enhanced else "simulation-manufacturing-v1",
+        usage,
+    )
+    if cost.availability != MetricAvailability.AVAILABLE:
+        cost = _unavailable_cost(cost.reason or "Approved pricing is not configured")
+
+    return ComparisonArmResult(
+        status=RunStatus.COMPLETED,
+        label=label,
+        decision=decision,
+        evidence=evidence,
+        findings=findings,
+        tool_timeline=_timeline(stage_name, tool_counts),
+        metrics=ArmMetrics(
+            metric_source="SIMULATED_ESTIMATE",
+            availability=MetricAvailability.AVAILABLE,
+            model_calls=model_calls,
+            tool_calls=len(tool_counts),
+            returned_records=len(evidence),
+            input_tokens=usage.input_tokens,
+            output_tokens=usage.output_tokens,
+            total_tokens=usage.total_tokens,
+            foundry_request_ms=model_time,
+            supabase_retrieval_ms=tool_time,
+            end_to_end_ms=model_time + tool_time + 2,
+            retries=0,
+            stages=stages,
+            estimated_model_cost=cost,
+        ),
+        context_packet_summary=context_packet,
+        limitations=[
+            "Local deterministic simulation; no Foundry model was invoked.",
+            "Tool activity is a local preview of the approved Supabase contracts; the remote Data API was not invoked.",
+            "Token and latency values validate the UI contract and are not provider telemetry.",
+        ],
+    )
+
+
+def _evaluate_arm(
+    arm: ComparisonArmResult,
+    expectation: dict[str, Any],
+    expected_rows: list[dict[str, Any]],
+) -> ArmEvaluation:
+    evidence_ids = {item.source_record_id for item in arm.evidence}
+    citations = set(arm.decision.citations)
+    required = {
+        row["source_record_id"]
+        for row in expected_rows
+        if row["requirement"] == "REQUIRED"
+    }
+    forbidden = set(expectation["forbidden_record_ids"])
+    expected_conflicts = {
+        source_id
+        for group in expectation["expected_conflict_groups"]
+        for source_id in group["record_ids"]
+    }
+    found = len(required & evidence_ids)
+    return ArmEvaluation(
+        disposition_correct=arm.decision.disposition == expectation["expected_disposition"],
+        critical_false_pass=(
+            arm.decision.disposition == "PASS" and expectation["expected_disposition"] != "PASS"
+        ),
+        required_evidence_found=found,
+        required_evidence_total=len(required),
+        required_evidence_recall=round(found / len(required), 4) if required else 1.0,
+        valid_citations=len(citations & evidence_ids),
+        citation_count=len(citations),
+        missing_evidence_detected=set(arm.findings.missing)
+        == set(expectation["expected_missing_classes"]),
+        stale_evidence_detected=set(arm.findings.stale)
+        == set(expectation["expected_stale_record_ids"]),
+        conflicts_detected=set(arm.findings.conflict_source_ids) == expected_conflicts,
+        unauthorized_leakage=len((evidence_ids | citations) & forbidden),
+        cross_tenant_leakage=len(
+            {source_id for source_id in (evidence_ids | citations) & forbidden if "BETA" in source_id}
+        ),
+        schema_valid=True,
+    )
+
+
+def _evaluation(lot_id: str, baseline: ComparisonArmResult, enhanced: ComparisonArmResult) -> ComparisonEvaluation:
+    evaluator = _evaluator_dataset()
+    expectation = next(
+        (row for row in evaluator["case_expectations"] if row["lot_id"] == lot_id),
+        None,
+    )
+    if expectation is None:
+        return ComparisonEvaluation(
+            status=EvaluationStatus.NOT_SCORED,
+            note="Not automatically scored — human review required",
+        )
+    expected_rows = [
+        row for row in evaluator["expected_evidence"] if row["case_id"] == expectation["case_id"]
+    ]
+    return ComparisonEvaluation(
+        status=EvaluationStatus.SCORED,
+        baseline=_evaluate_arm(baseline, expectation, expected_rows),
+        hexacontext=_evaluate_arm(enhanced, expectation, expected_rows),
+        note="Scored after both results were produced against the private synthetic answer key.",
+    )
+
+
+def _decimal_delta(left: CostEstimate, right: CostEstimate) -> str | None:
+    if not left.amount or not right.amount or left.currency != right.currency:
+        return None
+    from decimal import Decimal
+
+    return format(Decimal(right.amount) - Decimal(left.amount), "f")
+
+
+def run_comparison(request: ComparisonRequest, *, persist: bool = True) -> ComparisonResult:
+    started = time.perf_counter()
+    snapshot = _runtime_dataset()["dataset_snapshots"][0]
+    profile = _runtime_dataset()["decision_profiles"][0]
+    normalized_task = " ".join(request.task.split())
+    request_hash = hashlib.sha256(normalized_task.encode("utf-8")).hexdigest()
+    baseline = _arm(request, enhanced=False)
+    enhanced = _arm(request, enhanced=True)
+    evaluation = _evaluation(request.lot_id, baseline, enhanced)
+
+    baseline_eval = evaluation.baseline
+    enhanced_eval = evaluation.hexacontext
+    result = ComparisonResult(
+        comparison_run_id=str(uuid.uuid4()),
+        status=RunStatus.COMPLETED,
+        controls=FrozenControls(
+            normalized_task=normalized_task,
+            request_hash=request_hash,
+            lot_id=request.lot_id,
+            actor_label="Synthetic quality reviewer",
+            tenant_id=PRIMARY_TENANT,
+            site_id=PRIMARY_SITE,
+            snapshot_id=snapshot["snapshot_id"],
+            dataset_version=snapshot["dataset_version"],
+            record_manifest_hash=snapshot["record_manifest_hash"],
+            as_of_time=snapshot["as_of_time"],
+            decision_profile_id=profile["profile_id"],
+            decision_profile_version=profile["profile_version"],
+            tool_contract_version=TOOL_CONTRACT_VERSION,
+            execution_mode="SIMULATED_LOCAL",
+        ),
+        baseline=baseline,
+        hexacontext=enhanced,
+        evaluation=evaluation,
+        deltas=ComparisonDeltas(
+            input_tokens=(enhanced.metrics.input_tokens or 0) - (baseline.metrics.input_tokens or 0),
+            output_tokens=(enhanced.metrics.output_tokens or 0) - (baseline.metrics.output_tokens or 0),
+            total_tokens=(enhanced.metrics.total_tokens or 0) - (baseline.metrics.total_tokens or 0),
+            model_calls=enhanced.metrics.model_calls - baseline.metrics.model_calls,
+            tool_calls=enhanced.metrics.tool_calls - baseline.metrics.tool_calls,
+            end_to_end_ms=enhanced.metrics.end_to_end_ms - baseline.metrics.end_to_end_ms,
+            required_evidence_found=(
+                enhanced_eval.required_evidence_found - baseline_eval.required_evidence_found
+                if enhanced_eval and baseline_eval
+                else None
+            ),
+            valid_citations=(
+                enhanced_eval.valid_citations - baseline_eval.valid_citations
+                if enhanced_eval and baseline_eval
+                else None
+            ),
+            estimated_model_cost=_decimal_delta(
+                baseline.metrics.estimated_model_cost,
+                enhanced.metrics.estimated_model_cost,
+            ),
+        ),
+        comparison_elapsed_ms=max(
+            1,
+            round((time.perf_counter() - started) * 1000),
+        ),
+        limitations=[
+            "Synthetic benchmark with 15 designed cases; do not interpret as production accuracy.",
+            "This computer is showing a local deterministic comparison preview because Foundry is not configured.",
+            "Tool traces execute against the generated local snapshot, not the remote Supabase Data API.",
+            "Estimated model cost remains unavailable until an approved deployment-specific pricing catalog is configured.",
+            "Supabase infrastructure cost is not allocated to individual tool calls.",
+        ],
+    )
+    if persist:
+        _RUNS[result.comparison_run_id] = result
+    return result
+
+
+def get_comparison(comparison_run_id: str) -> ComparisonResult:
+    try:
+        return _RUNS[comparison_run_id]
+    except KeyError:
+        raise KeyError(comparison_run_id) from None
+
+
+def evaluation_summary() -> EvaluationSummary:
+    results = [
+        run_comparison(ComparisonRequest(lot_id=case.lot_id), persist=False)
+        for case in comparison_cases()
+    ]
+    baseline_evals = [result.evaluation.baseline for result in results if result.evaluation.baseline]
+    enhanced_evals = [result.evaluation.hexacontext for result in results if result.evaluation.hexacontext]
+
+    def aggregate(arm_name: str, evaluations: list[ArmEvaluation]) -> ArmAggregate:
+        arms = [getattr(result, arm_name) for result in results]
+        return ArmAggregate(
+            correct=sum(item.disposition_correct for item in evaluations),
+            critical_false_passes=sum(item.critical_false_pass for item in evaluations),
+            mean_required_evidence_recall=round(
+                sum(item.required_evidence_recall for item in evaluations) / len(evaluations), 4
+            ),
+            valid_citations=sum(item.valid_citations for item in evaluations),
+            unauthorized_leakage=sum(item.unauthorized_leakage for item in evaluations),
+            total_tokens=sum(arm.metrics.total_tokens or 0 for arm in arms),
+            total_model_calls=sum(arm.metrics.model_calls for arm in arms),
+            total_tool_calls=sum(arm.metrics.tool_calls for arm in arms),
+            median_end_to_end_ms=round(median(arm.metrics.end_to_end_ms for arm in arms)),
+            estimated_model_cost=None,
+        )
+
+    baseline = aggregate("baseline", baseline_evals)
+    enhanced = aggregate("hexacontext", enhanced_evals)
+    return EvaluationSummary(
+        dataset_version=results[0].controls.dataset_version,
+        snapshot_id=results[0].controls.snapshot_id,
+        execution_mode="SIMULATED_LOCAL",
+        attempted_cases=len(results),
+        paired_complete_cases=len(results),
+        baseline=baseline,
+        hexacontext=enhanced,
+        deltas=ComparisonDeltas(
+            input_tokens=sum(result.deltas.input_tokens or 0 for result in results),
+            output_tokens=sum(result.deltas.output_tokens or 0 for result in results),
+            total_tokens=enhanced.total_tokens - baseline.total_tokens,
+            model_calls=enhanced.total_model_calls - baseline.total_model_calls,
+            tool_calls=enhanced.total_tool_calls - baseline.total_tool_calls,
+            end_to_end_ms=enhanced.median_end_to_end_ms - baseline.median_end_to_end_ms,
+            required_evidence_found=sum(result.deltas.required_evidence_found or 0 for result in results),
+            valid_citations=sum(result.deltas.valid_citations or 0 for result in results),
+            estimated_model_cost=None,
+        ),
+        note=(
+            "Local contract preview: both arms receive the same complete authorized evidence, so it does not "
+            "manufacture a HexaContext quality advantage. Foundry runs are required for a model-performance claim."
+        ),
+    )

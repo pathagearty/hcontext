@@ -221,17 +221,17 @@ Guide mode tests whether the main value lies in specialized retrieval planning r
 
 ## Foundry implementation posture
 
-### Recommended first implementation
+### Immediate implementation route
 
-Use Git-defined ephemeral agents through the Microsoft Foundry project-scoped Responses API.
+Use the two existing saved per-agent Responses endpoints first. Both endpoints have been reached successfully from the Foundry-connected computer with `api-version=2025-05-15-preview` and their configured `gpt-5` model.
 
 Reasons:
 
-- prompts and tool definitions remain versioned with code;
-- transfer to GitHub/work computer is straightforward;
-- no hidden Playground drift;
-- application code controls comparison, validation and traces;
-- the same definitions can later be published as prompt or hosted agents.
+- endpoint access and Entra authentication are already proven;
+- the direct backend client can be tested offline with a fake HTTP transport;
+- the two-computer workflow needs only sanitized status metadata from the connected computer.
+
+Before recorded evaluation, export/reconcile the exact saved prompts, tools, schemas, model, IDs and versions with Git. Git-defined ephemeral agents remain a later reproducibility option; record the route used and never blend routes silently.
 
 Foundry setup package:
 
@@ -418,9 +418,9 @@ The data substrate is replaceable behind the shared tool contract.
 
 ### Hidden evaluation data
 
-Expected dispositions, required evidence IDs/classes, expected conflicts and forbidden evidence stay in evaluation fixtures and never enter runtime prompts or tool results.
+Expected dispositions, required evidence IDs/classes, expected conflicts and forbidden evidence stay in the private evaluator schema and never enter runtime prompts, runtime source tables or Foundry tool results.
 
-See [`synthetic-data-plan.md`](synthetic-data-plan.md).
+The controlling Supabase dataset specification is [`supabase-synthetic-dataset-v1.md`](supabase-synthetic-dataset-v1.md). It defines 15 primary cases as normalized raw records, a private evaluator-only answer key, RLS/tenant/scope controls, native PostgreSQL full-text search and the migration/seed workflow. The original [`synthetic-data-plan.md`](synthetic-data-plan.md) now documents only the JSON regression harness.
 
 ## Small model and fine-tuning direction
 
@@ -513,17 +513,31 @@ Status: implemented and tested.
 - retrieval-mode simulation;
 - UI and smoke evaluation.
 
+### Phase 0.5 — Foundry client and evaluator boundary
+
+Status: implemented and tested offline.
+
+- typed `.env.local`/deployment settings;
+- saved-agent ID/endpoint/model validation;
+- Azure CLI/managed-identity token acquisition;
+- fakeable Responses client with safe retries/errors;
+- evaluator answer key separated from runtime/public data.
+
 ### Phase 1 — source/tool substrate
 
-- dedicated approved data project;
-- raw synthetic records without runtime answer labels;
-- immutable snapshots;
-- shared read-only tools;
-- contract/security tests.
+Status: database and backend gateway implemented; Foundry wiring and real Auth-user exercise remain.
+
+- dedicated `hexacontext` Supabase project with four versioned migrations;
+- 179 raw synthetic runtime records without answer labels and 124 separately seeded evaluator records;
+- immutable snapshot `hx-mfg-v1-snapshot-001` with a deterministic manifest;
+- forced tenant/scope RLS, unexposed `private_eval`, indexed joins and native note full-text search;
+- seven shared security-invoker read-only database operations and a user-JWT-preserving backend gateway;
+- clean reset, remote claim/isolation checks, 41 repository tests, schema lint and remote advisors passing;
+- pending approved Supabase Auth identities, real user-JWT Data API test and Foundry function-call loop.
 
 ### Phase 2 — Manufacturing Agent baseline
 
-- Git-defined ephemeral Foundry Agent;
+- verified saved Manufacturing Agent endpoint;
 - direct tool use;
 - strict schema and citation validation;
 - traces and hidden evaluation.
@@ -559,8 +573,10 @@ Only after the data and continuation gates are met.
 README.md                         Top-level setup/status/index
 QUESTIONS.md                      Open business and technical decisions
 backend/                          Current local FastAPI harness
+backend/supabase_gateway.py      Server-bound, user-JWT-preserving Supabase tool gateway
 frontend/                         Current local stakeholder UI
-data/                             Synthetic generator and generated fixtures
+data/                             Legacy JSON and normalized Supabase generators/fixtures
+supabase/                         Versioned schema/RLS/RPC migrations and separate seeds
 tests/                            Current unit/API tests
 docs/business-review.md           Product/business assessment
 docs/architecture.md              Current and target architecture background
@@ -577,12 +593,12 @@ docs/foundry/                     Two-agent Foundry implementation package
 2. Inspect current code/tests before editing.
 3. Re-check current Microsoft Foundry docs and target-project capabilities.
 4. Confirm model deployments, roles, region, quota and approved identity.
-5. Confirm dedicated data-project decision and manufacturing evaluator.
-6. Implement the shared tool contracts before the agents.
-7. Implement the Manufacturing Agent direct baseline before HexaContext.
-8. Lock a baseline evaluation set and thresholds.
+5. Confirm the manufacturing evaluator and approve/provision the Supabase Auth demo identities.
+6. Exercise `SupabaseToolGateway` with a real short-lived approved user JWT.
+7. Connect the same seven tool implementations to both saved agents.
+8. Implement the Manufacturing Agent direct baseline before HexaContext.
 9. Implement HexaContext hydrate and compare against the unchanged Manufacturing Agent.
-10. Verify traces, authorization and failure behavior before modifying the UI claim narrative.
+10. Verify traces, hidden evaluation, authorization and failure behavior before modifying the UI claim narrative.
 
 Do not start with fine-tuning, a graph database or production integrations.
 
@@ -592,7 +608,7 @@ Do not start with fine-tuning, a graph database or production integrations.
 - Manufacturing Agent model.
 - Smaller HexaContext model candidates.
 - Qualified manufacturing profile/evaluation owner.
-- Dedicated Supabase/data project approval.
+- Supabase Auth identity owner, token refresh/expiry and demo-user lifecycle.
 - Initial hydrate vs guide priority; current recommendation is hydrate first.
 - Search substrate and whether a graph is needed.
 - Context/token/tool budgets.

@@ -7,7 +7,7 @@ Agent definition ID: hexacontext-compiler-agent
 Initial version: 1.0.0
 Suggested Foundry display name: hexacontext-compiler-agent-v1
 Owner: Sneha HexaContext PoC team
-Type for initial MVP: Git-defined ephemeral Foundry agent
+Type for initial MVP: Existing saved per-agent Responses endpoint; definition reconciled with Git before evaluation
 ```
 
 ## Purpose
@@ -38,9 +38,9 @@ That is a reasonable hypothesis for an approved smaller Foundry model. It is not
 
 | Setting | Initial value |
 |---|---|
-| Definition pattern | Ephemeral agent through project-scoped Responses API |
+| Definition pattern | Existing saved per-agent Responses endpoint |
 | Model environment variable | `FOUNDRY_HEXACONTEXT_MODEL` |
-| Exact model | Approved smaller model selected in target Foundry project |
+| Exact model | `gpt-5` for the currently verified saved endpoint; smaller-model testing is a later condition |
 | Temperature | `0` where available |
 | Output | Strict `ContextPacket` or `RetrievalPlan` JSON schema |
 | Tool choice — hydrate | Require profile retrieval if not supplied; otherwise `auto` with bounded maximum calls |

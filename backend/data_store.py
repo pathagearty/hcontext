@@ -9,6 +9,7 @@ from .models import LotSummary
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "generated" / "hexacontext_demo.json"
+EVALUATION_DATA_PATH = ROOT / "data" / "generated" / "hexacontext_evaluation.json"
 
 
 @lru_cache(maxsize=1)
@@ -16,6 +17,22 @@ def load_dataset() -> dict[str, Any]:
     if not DATA_PATH.exists():
         raise RuntimeError("Synthetic dataset is missing; run `python3 data/generate.py`")
     return json.loads(DATA_PATH.read_text(encoding="utf-8"))
+
+
+@lru_cache(maxsize=1)
+def load_evaluation_dataset() -> dict[str, Any]:
+    if not EVALUATION_DATA_PATH.exists():
+        raise RuntimeError("Evaluator fixture is missing; run `python3 data/generate.py`")
+    return json.loads(EVALUATION_DATA_PATH.read_text(encoding="utf-8"))
+
+
+def expected_dispositions() -> dict[str, str]:
+    """Answer keys are available only to evaluator code, never runtime/public models."""
+
+    return {
+        item["lot_id"]: item["expected_disposition"]
+        for item in load_evaluation_dataset()["cases"]
+    }
 
 
 def list_lots() -> list[LotSummary]:

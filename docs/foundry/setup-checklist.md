@@ -22,20 +22,21 @@ Microsoft's current tool guidance lists a Foundry project, a model deployment in
 
 ## 2. Choose the agent definition pattern
 
-### Initial MVP — recommended
+### Initial MVP — current decision
 
-- [ ] Use Git-defined ephemeral agents called through the Foundry project-scoped Responses API.
-- [ ] Keep exact prompts in `docs/foundry/` initially, then move runtime copies into versioned source/constants without changing text.
+- [x] Use the two verified saved per-agent Responses endpoints for the first connection path.
+- [ ] Export/reconcile each saved definition's exact prompt, tools, schema, model, ID and version with Git.
 - [ ] Record prompt hashes and agent-definition versions.
 - [ ] Treat Playground experiments as temporary until copied into Git.
 
-Current Microsoft documentation describes the project endpoint as:
+The verified saved endpoint contract is:
 
 ```text
-{FOUNDRY_PROJECT_ENDPOINT}/openai/v1/responses
+POST {FOUNDRY_*_AGENT_ENDPOINT}?api-version=2025-05-15-preview
+model: gpt-5
 ```
 
-and the Agent Framework Foundry provider as a recommended Python path.
+Git-defined ephemeral agents remain a later option through the project endpoint. Record the route used on every comparison and never compare silently different definitions.
 
 ### Later option
 
@@ -56,8 +57,12 @@ Environment variable names:
 
 ```bash
 FOUNDRY_PROJECT_ENDPOINT=
-FOUNDRY_MANUFACTURING_MODEL=
-FOUNDRY_HEXACONTEXT_MODEL=
+FOUNDRY_MANUFACTURING_AGENT_ID=
+FOUNDRY_MANUFACTURING_AGENT_ENDPOINT=
+FOUNDRY_MANUFACTURING_MODEL=gpt-5
+FOUNDRY_HEXACONTEXT_AGENT_ID=
+FOUNDRY_HEXACONTEXT_AGENT_ENDPOINT=
+FOUNDRY_HEXACONTEXT_MODEL=gpt-5
 APPLICATIONINSIGHTS_CONNECTION_STRING=
 ```
 
@@ -85,28 +90,32 @@ For Azure-hosted deployment, prefer managed identity where supported and approve
 
 ## 5. Python packages
 
-Re-check current Microsoft versions before installing. The current Responses API quickstart documents:
+The current direct saved-agent foundation uses:
 
 ```bash
-python3 -m pip install agent-framework-foundry aiohttp azure-identity
+python3 -m pip install -r requirements.txt
 ```
 
-- [ ] Pin tested versions in `requirements-foundry.txt` or the project package manager.
+- [x] Add `azure-identity` and `pydantic-settings` to project requirements.
+- [x] Keep the HTTP transport fakeable so unit tests require no live secrets.
+- [ ] Pin exact tested versions or generate a lock file if the work environment requires it.
 - [ ] Generate/update a lock file if the work environment requires it.
 - [ ] Run vulnerability/license checks required by the organization.
 - [ ] Do not replace the current local mock path until the Foundry path passes tests.
 
 ## 6. Implement the shared tool gateway
 
-- [ ] Implement [`tool-contracts.md`](tool-contracts.md) as backend functions or narrow OpenAPI operations.
-- [ ] Bind actor permissions server-side.
-- [ ] Implement immutable snapshot/as-of behavior.
-- [ ] Implement hard result, relationship-depth and context-size limits.
-- [ ] Add source ID/version/timestamp/authority/content hash.
-- [ ] Distinguish no-match from system failure.
-- [ ] Exclude unauthorized data before model invocation.
-- [ ] Add prompt-injection and untrusted-tool-output handling.
-- [ ] Verify there are no write methods.
+- [x] Implement the seven [`tool-contracts.md`](tool-contracts.md) operations as security-invoker PostgreSQL functions plus a typed backend gateway.
+- [x] Bind subject, snapshot and time server-side; derive tenant/scopes only from the approved user JWT.
+- [x] Implement immutable snapshot/as-of behavior.
+- [x] Implement hard result, relationship-depth and query-size limits.
+- [x] Add source ID/version/timestamp/authority/content hash.
+- [x] Distinguish successful no-match from source/system failure.
+- [x] Exclude unauthorized data through RLS before model invocation.
+- [x] Mark retrieved note text as untrusted evidence and preserve the prompt-injection test record as data.
+- [x] Verify `anon` has no access and authenticated actors receive no write grants or policies.
+- [ ] Provision approved Supabase Auth identities and exercise the gateway end to end with real short-lived user JWTs.
+- [ ] Publish the narrow operations to the saved Foundry agents and implement the function-call execution loop.
 - [ ] Use the same implementation for baseline and HexaContext arms.
 
 Suggested initial physical layer:
@@ -126,7 +135,7 @@ Optional bounded graph projection
   only after relational baseline and graph lift are measured
 ```
 
-If separate Supabase projects are approved, this PoC should use its own project and migrations. Do not reuse Shorya's prior-authorization database.
+The dedicated `hexacontext` Supabase project now contains the versioned runtime schema, 15 cases plus one shadow lot, RLS, full-text search and separately seeded private answer key from [`../supabase-synthetic-dataset-v1.md`](../supabase-synthetic-dataset-v1.md). The pre-tagged JSON `signals` were not copied into Supabase.
 
 ## 7. Implement the agents
 
@@ -177,7 +186,7 @@ See [`orchestration-and-evaluation.md`](orchestration-and-evaluation.md).
 ## 10. Build evaluations
 
 - [ ] Preserve the current 12-case set as smoke tests.
-- [ ] Separate hidden answer keys from runtime data.
+- [x] Separate local answer keys from runtime/public fixture data.
 - [ ] Add deterministic evidence/citation/authorization/freshness/conflict evaluators.
 - [ ] Use Foundry agent evaluators where available and approved.
 - [ ] Label preview evaluators as non-release-authoritative.

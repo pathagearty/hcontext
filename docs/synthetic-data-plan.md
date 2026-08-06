@@ -1,5 +1,7 @@
 # Synthetic Data Plan
 
+> **Plan status:** this file documents the original 12-case JSON regression harness. The controlling plan for the live Foundry + Supabase implementation is [`supabase-synthetic-dataset-v1.md`](supabase-synthetic-dataset-v1.md), which replaces pre-tagged runtime signals with normalized raw records and a private evaluator-only answer key.
+
 ## Objective
 
 Create a safe, reproducible and evaluator-reviewable dataset that demonstrates whether HexaContext adds value over exact-record, relationship-only or narrative-search baselines for one manufacturing lot-disposition decision profile.

@@ -7,7 +7,7 @@ Agent definition ID: manufacturing-readiness-agent
 Initial version: 1.0.0
 Suggested Foundry display name: manufacturing-readiness-agent-v1
 Owner: Sneha HexaContext PoC team
-Type for initial MVP: Git-defined ephemeral Foundry agent
+Type for initial MVP: Existing saved per-agent Responses endpoint; definition reconciled with Git before evaluation
 ```
 
 ## Purpose
@@ -32,9 +32,9 @@ The model, system prompt version, business rules, decoding settings and output s
 
 | Setting | Initial value |
 |---|---|
-| Definition pattern | Ephemeral agent through project-scoped Responses API |
+| Definition pattern | Existing saved per-agent Responses endpoint |
 | Model environment variable | `FOUNDRY_MANUFACTURING_MODEL` |
-| Exact model | Select in target Foundry project after capability/region approval |
+| Exact model | `gpt-5` for the currently verified saved endpoint |
 | Temperature | `0` where the selected model exposes temperature |
 | Output | Strict JSON schema; no free-form fallback in recorded comparisons |
 | Tool choice — baseline | `required` for initial profile/record retrieval, then `auto` if the runtime supports per-step control |

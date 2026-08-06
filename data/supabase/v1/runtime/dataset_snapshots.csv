@@ -1,0 +1,2 @@
+snapshot_id,dataset_id,dataset_version,as_of_time,synthetic,contains_real_company_or_client_data,record_manifest_hash,created_at
+hx-mfg-v1-snapshot-001,hx-manufacturing-supabase-v1,1.0.0,2026-08-01T12:00:00Z,true,false,4a69bc05efbb8e72d2f0e98d3417324f49c9be3c98ef42818c73efeff1a8a3d9,2026-08-01T12:05:00Z

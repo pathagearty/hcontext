@@ -43,7 +43,6 @@ class LotSummary(BaseModel):
     quantity: int
     manufactured_at: str
     scenario: str
-    expected_disposition: Disposition
 
 
 class DecisionRequest(BaseModel):

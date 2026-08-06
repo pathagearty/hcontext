@@ -3,168 +3,161 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>HexaContext — Manufacturing Decision Readiness</title>
+  <meta name="description" content="A side-by-side evaluation of a manufacturing agent with and without HexaContext.">
+  <title>HexaContext — Manufacturing Agent Evaluation</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
   <aside class="sidebar">
-    <div class="brand">
-      <div class="brand-mark" aria-hidden="true"><span></span></div>
-      <div><strong>HexaContext</strong><small>Decision assurance layer</small></div>
-    </div>
+    <a class="brand" href="#comparison" aria-label="HexaContext evaluation home">
+      <span class="brand-mark" aria-hidden="true">H</span>
+      <span><strong>HexaContext</strong><small>Agent evaluation</small></span>
+    </a>
     <nav aria-label="Primary navigation">
-      <a class="active" href="#workspace"><span>01</span> Decision workspace</a>
-      <a href="#evaluation"><span>02</span> Evaluation lab</a>
-      <a href="#architecture"><span>03</span> Architecture</a>
-      <a href="#validity"><span>04</span> PoC validity</a>
+      <a class="active" href="#comparison"><span>01</span> Demo + comparison</a>
+      <a href="#evaluation-lab"><span>02</span> Evaluation lab</a>
+      <a href="#method"><span>03</span> Method & limits</a>
     </nav>
-    <div class="sidebar-note">
+    <div class="sidebar-status">
       <span class="status-dot"></span>
-      <strong>Synthetic demo</strong>
-      <p>No client, employee, supplier, or production data.</p>
+      <div><strong>Synthetic data</strong><small>15 controlled cases</small></div>
     </div>
   </aside>
 
   <main>
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Manufacturing profile · Lot disposition readiness</p>
-        <h1>Governed context for the decision in front of the agent.</h1>
+    <div id="mode-banner" class="mode-banner" role="status">
+      <strong>Checking execution mode…</strong>
+    </div>
+
+    <section id="comparison" class="hero section-anchor">
+      <div class="hero-copy">
+        <p class="eyebrow">Manufacturing readiness evaluation</p>
+        <h1>Is better context worth the extra work?</h1>
+        <p>Run the same manufacturing request through the same decision agent—with and without a HexaContext compilation step—and inspect the quality, safety, token, tool, latency, and cost tradeoff.</p>
       </div>
-      <div class="runtime-controls">
-        <label>Retrieval
-          <select id="retrieval-mode">
-            <option value="hybrid">Hybrid</option>
-            <option value="graph">Graph + exact</option>
-            <option value="search">Search + exact</option>
-            <option value="exact">Exact only</option>
-          </select>
+      <div class="hero-question">
+        <span>Evaluation question</span>
+        <strong>Does HexaContext improve evidence and decision quality enough to justify its overhead?</strong>
+      </div>
+    </section>
+
+    <section class="run-panel" aria-labelledby="run-title">
+      <div class="run-controls">
+        <label for="case-select">
+          <span id="run-title">Manufacturing lot</span>
+          <select id="case-select" aria-describedby="case-help"></select>
+          <small id="case-help">Neutral labels keep the expected scenario hidden until scoring.</small>
         </label>
-        <label>Explanation provider
-          <select id="provider">
-            <option value="mock">Deterministic mock</option>
-            <option value="azure_foundry">Azure Foundry</option>
-            <option value="aws_bedrock">AWS Bedrock</option>
-          </select>
-        </label>
-        <div id="runtime-status" class="runtime-status"><span></span> Connecting</div>
+        <div class="control-fact"><span>Actor</span><strong id="actor-label">Server-owned synthetic reviewer</strong></div>
+        <div class="control-fact"><span>Snapshot</span><strong id="snapshot-label">Loading…</strong></div>
+        <div class="control-fact"><span>Decision profile</span><strong id="profile-label">manufacturing_lot_disposition_v1</strong></div>
+        <button id="run-button" class="primary-button" type="button">
+          <span>Run comparison</span><b aria-hidden="true">→</b>
+        </button>
       </div>
-    </header>
-
-    <section class="thesis-card">
-      <div>
-        <p class="eyebrow">MVP thesis</p>
-        <h2>An existing agent should not have to rediscover the business context for every decision.</h2>
-        <p>HexaContext retrieves the minimum authorized lot, supplier, equipment, revision and narrative evidence; applies deterministic policy; and returns a source-backed packet for human review.</p>
-      </div>
-      <div class="boundary">
-        <strong>Decision boundary</strong>
-        <p><b>Code:</b> authorization, evidence retrieval, policy and packet validation.</p>
-        <p><b>Model:</b> concise explanation only.</p>
-        <p><b>Human:</b> final release, hold or escalation.</p>
+      <div class="flow-compare" aria-label="Comparison architecture">
+        <div class="shared-input"><span>Same request</span><small>actor · profile · snapshot · tools</small></div>
+        <div class="flow-split" aria-hidden="true"></div>
+        <div class="flow-arm direct-flow">
+          <span class="flow-number">A</span>
+          <div><strong>Foundry Direct</strong><small>Manufacturing Agent → tools → decision</small></div>
+        </div>
+        <div class="flow-arm hexa-flow">
+          <span class="flow-number">B</span>
+          <div><strong>With HexaContext</strong><small>Compiler → ContextPacket → Manufacturing Agent</small></div>
+        </div>
       </div>
     </section>
 
-    <section class="metric-grid" aria-label="Demo summary">
-      <article><span id="case-count">—</span><p>Designed synthetic cases</p></article>
-      <article><span>3</span><p>Context route families</p></article>
-      <article><span>7</span><p>Deterministic assurance checks</p></article>
-      <article><span id="hybrid-score">—</span><p>Hybrid fixture agreement</p></article>
+    <section id="empty-state" class="empty-state">
+      <span class="empty-icon" aria-hidden="true">↔</span>
+      <div><h2>Ready for a controlled comparison</h2><p>Both arms will be scored only after their results are locked.</p></div>
     </section>
 
-    <section id="workspace" class="workspace-section section-anchor">
+    <div id="comparison-result" class="hidden" aria-live="polite">
+      <section class="verdict-panel">
+        <div>
+          <p class="eyebrow">Run conclusion</p>
+          <h2 id="run-verdict">—</h2>
+          <p id="run-verdict-detail">—</p>
+        </div>
+        <div id="run-id" class="run-id"></div>
+      </section>
+
+      <section class="activity-section" aria-labelledby="activity-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">Demo walkthrough</p><h2 id="activity-title">What each path did</h2></div>
+          <p>Follow the work first. The evaluation below then scores the outcome and measures the overhead.</p>
+        </div>
+        <div id="agent-activity" class="activity-grid"></div>
+      </section>
+
+      <section aria-labelledby="delta-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">Incremental effect</p><h2 id="delta-title">What HexaContext changed</h2></div>
+          <p>Delta is always With HexaContext minus Foundry Direct.</p>
+        </div>
+        <div id="delta-grid" class="delta-grid"></div>
+      </section>
+
+      <section class="arm-section" aria-labelledby="arm-title">
+        <div class="section-heading compact-heading">
+          <div><p class="eyebrow">Side-by-side result</p><h2 id="arm-title">Same decision task, different context path</h2></div>
+          <p>Both columns use equal visual weight. Safety failures are highlighted consistently on either side.</p>
+        </div>
+        <div class="arm-grid">
+          <article id="baseline-card" class="arm-card"></article>
+          <article id="hexacontext-card" class="arm-card"></article>
+        </div>
+      </section>
+
+      <section id="evaluator-panel" class="evaluator-panel"></section>
+    </div>
+
+    <section id="evaluation-lab" class="evaluation-lab section-anchor">
       <div class="section-heading">
-        <div><p class="eyebrow">01 · Decision workspace</p><h2>Inspect the evidence path, not just the answer.</h2></div>
-        <p>Select a designed case, compare retrieval modes, and compile a governed DecisionPacket.</p>
+        <div><p class="eyebrow">Aggregate evaluation lab</p><h2>All 15 controlled cases</h2></div>
+        <p>Paired results are grouped by one dataset, snapshot, profile, and execution mode. This is a designed synthetic benchmark—not production accuracy.</p>
       </div>
-
-      <div class="workspace-grid">
-        <aside class="case-browser panel">
-          <div class="panel-title"><div><h3>Lot inbox</h3><p>Designed edge cases</p></div><span id="lot-total" class="count-pill">—</span></div>
-          <div id="lot-list" class="lot-list" aria-live="polite"></div>
-        </aside>
-
-        <article class="context-panel panel">
-          <div class="panel-title">
-            <div><p class="eyebrow">Selected decision</p><h3 id="lot-title">Loading…</h3></div>
-            <span id="scenario-pill" class="scenario-pill">—</span>
-          </div>
-          <div id="lot-metadata" class="metadata-grid"></div>
-          <div class="subheading"><div><h4>Bounded relationship map</h4><p>Only relationships permitted by this decision profile.</p></div><span class="legend">Graph context</span></div>
-          <div id="context-graph" class="context-graph" aria-label="Lot relationship graph"></div>
-          <div class="subheading"><div><h4>Authorized source candidates</h4><p>Pre-compile view; retrieval mode determines packet inclusion.</p></div><span id="evidence-count" class="count-pill">—</span></div>
-          <div id="evidence-list" class="evidence-list"></div>
-        </article>
-
-        <aside class="packet-panel panel">
-          <div class="panel-title"><div><p class="eyebrow">Governed output</p><h3>DecisionPacket</h3></div><span class="schema-pill">typed JSON</span></div>
-          <div id="packet-empty" class="packet-empty">
-            <div class="packet-icon">⌁</div>
-            <h4>Compile the active context</h4>
-            <p>The packet will show the deterministic disposition, exact sources, missing information, conflicts and required human action.</p>
-          </div>
-          <div id="packet-result" class="packet-result hidden"></div>
-          <button id="compile-button" class="primary-button">Compile governed packet</button>
-        </aside>
+      <div class="lab-summary-grid">
+        <article><span id="attempted-cases">—</span><p>Cases attempted</p></article>
+        <article><span id="paired-cases">—</span><p>Paired complete</p></article>
+        <article><span id="quality-delta">—</span><p>Correct-decision delta</p></article>
+        <article><span id="token-delta">—</span><p>Incremental tokens</p></article>
       </div>
-    </section>
-
-    <section id="evaluation" class="evaluation-section section-anchor">
-      <div class="section-heading">
-        <div><p class="eyebrow">02 · Evaluation lab</p><h2>Show when relationship context changes the result.</h2></div>
-        <p>Every metric below is calculated live from the checked-in synthetic answer key—not presented as production performance.</p>
-      </div>
-      <div class="evaluation-grid">
-        <div class="panel evaluation-table-wrap">
+      <div class="aggregate-layout">
+        <div class="aggregate-table-wrap">
           <table>
-            <thead><tr><th>Retrieval condition</th><th>Fixture agreement</th><th>Correct</th><th>False passes</th><th>Over-escalations</th></tr></thead>
-            <tbody id="evaluation-body"><tr><td colspan="5">Running local evaluation…</td></tr></tbody>
+            <thead><tr><th>Metric</th><th>Foundry Direct</th><th>With HexaContext</th><th>Delta</th></tr></thead>
+            <tbody id="aggregate-body"><tr><td colspan="4">Calculating controlled cases…</td></tr></tbody>
           </table>
-          <p id="evaluation-note" class="table-note"></p>
         </div>
-        <div class="panel proof-card">
-          <p class="eyebrow">What this can validate</p>
-          <h3>Evidence quality before platform ambition</h3>
-          <ul>
-            <li>Does bounded graph context recover connected evidence missed by the active record?</li>
-            <li>Does hybrid retrieval reduce missing-context escalations without leaking restricted sources?</li>
-            <li>Do deterministic gates prevent the explanation model from deciding the outcome?</li>
-            <li>Can a reviewer trace every reason to an authorized source?</li>
-          </ul>
-        </div>
+        <aside class="lab-reading">
+          <p class="eyebrow">How to read this</p>
+          <h3 id="aggregate-verdict">Waiting for benchmark…</h3>
+          <p id="aggregate-note"></p>
+          <div class="version-stack">
+            <div><span>Execution</span><strong id="aggregate-mode">—</strong></div>
+            <div><span>Dataset</span><strong id="aggregate-dataset">—</strong></div>
+            <div><span>Snapshot</span><strong id="aggregate-snapshot">—</strong></div>
+          </div>
+        </aside>
       </div>
     </section>
 
-    <section id="architecture" class="architecture-section section-anchor">
+    <section id="method" class="method-section section-anchor">
       <div class="section-heading">
-        <div><p class="eyebrow">03 · Architecture</p><h2>A thin additive layer—not another agent platform.</h2></div>
-        <p>The local MVP uses versioned JSON; managed persistence and policy services remain explicit adapter boundaries.</p>
+        <div><p class="eyebrow">Method & limits</p><h2>What the comparison does—and does not—prove</h2></div>
       </div>
-      <div class="architecture-flow">
-        <article><span>1</span><h3>Decision request</h3><p>Existing agent sends profile, entity ID, actor and task.</p><small>FastAPI · Pydantic</small></article>
-        <i>→</i>
-        <article><span>2</span><h3>Hybrid context</h3><p>Exact records, bounded relationships and narrative evidence.</p><small>JSON now · Postgres + FalkorDB next</small></article>
-        <i>→</i>
-        <article><span>3</span><h3>Policy gates</h3><p>Authorization, freshness, blockers and escalation rules.</p><small>Python now · OPA/Rego adapter next</small></article>
-        <i>→</i>
-        <article><span>4</span><h3>Explanation</h3><p>Small model explains the fixed packet without changing it.</p><small>Mock · Foundry · Bedrock</small></article>
-        <i>→</i>
-        <article><span>5</span><h3>Human action</h3><p>Reviewer confirms, corrects or escalates with evidence.</p><small>Auditable DecisionPacket</small></article>
+      <div class="method-grid">
+        <article><span>Controlled</span><h3>Same conditions</h3><p>Request, actor, tenant, site, snapshot, Decision Profile, Manufacturing Agent contract, evidence schema, and tool plane are frozen for both arms.</p></article>
+        <article><span>Private</span><h3>Score after results</h3><p>The runtime paths do not receive expected answers. The synthetic evaluator reads its separate answer key only after both results exist.</p></article>
+        <article><span>Estimated</span><h3>Cost is not billing</h3><p>The app can estimate variable model cost from provider tokens and an approved pricing catalog. Azure Cost Management remains the later billing source of truth.</p></article>
+        <article><span>Bounded</span><h3>Small synthetic MVP</h3><p>Fifteen designed cases can reveal implementation and safety failures. They cannot establish production accuracy, compliance, or customer ROI.</p></article>
       </div>
     </section>
 
-    <section id="validity" class="validity-section section-anchor">
-      <div class="section-heading">
-        <div><p class="eyebrow">04 · PoC validity</p><h2>Separate measured demo evidence from future claims.</h2></div>
-      </div>
-      <div class="validity-grid">
-        <article class="panel measured"><h3>Measured in this MVP</h3><ul><li>Fixture agreement by retrieval condition</li><li>False-pass and over-escalation counts</li><li>Evidence authorization/exclusion trace</li><li>Deterministic policy results</li><li>API contract and local end-to-end behavior</li></ul></article>
-        <article class="panel unclaimed"><h3>Not yet claimed</h3><ul><li>Production quality accuracy</li><li>Manufacturing cost or cycle-time reduction</li><li>Foundry or Bedrock latency/cost advantage</li><li>Enterprise source-system integration</li><li>Fine-tuned SLM superiority or autonomous learning</li></ul></article>
-        <article class="panel next"><h3>Next validation gate</h3><ul><li>Qualified manufacturing reviewer approves rules and cases</li><li>One real source-system contract is named</li><li>Live Foundry or Bedrock explanation is traced</li><li>Baseline is repeated on evaluator-approved cases</li><li>Go / extend / merge / stop decision is recorded</li></ul></article>
-      </div>
-    </section>
-
-    <footer>HexaContext MVP · Synthetic manufacturing decision profile · Internal demonstration only</footer>
+    <footer>HexaContext manufacturing MVP · Synthetic data only · Human quality review remains the final authority</footer>
   </main>
   <script src="/static/app.js" defer></script>
 </body>
