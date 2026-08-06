@@ -40,7 +40,6 @@
       "quantity": 275,
       "manufactured_at": "2026-08-02T08:00:00Z",
       "scenario": "Complete, current, mutually consistent evidence",
-      "expected_disposition": "PASS",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1001-INSPECTION",
@@ -175,7 +174,6 @@
       "quantity": 300,
       "manufactured_at": "2026-08-03T08:00:00Z",
       "scenario": "Three connected supplier failures for the same part family",
-      "expected_disposition": "HOLD",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1002-INSPECTION",
@@ -310,7 +308,6 @@
       "quantity": 325,
       "manufactured_at": "2026-08-04T08:00:00Z",
       "scenario": "Critical defect found in direct inspection evidence",
-      "expected_disposition": "HOLD",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1003-INSPECTION",
@@ -445,7 +442,6 @@
       "quantity": 350,
       "manufactured_at": "2026-08-01T08:00:00Z",
       "scenario": "Inspection equipment calibration expired",
-      "expected_disposition": "HOLD",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1004-INSPECTION",
@@ -580,7 +576,6 @@
       "quantity": 375,
       "manufactured_at": "2026-08-02T08:00:00Z",
       "scenario": "Observed part revision does not match released revision",
-      "expected_disposition": "HOLD",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1005-INSPECTION",
@@ -715,7 +710,6 @@
       "quantity": 400,
       "manufactured_at": "2026-08-03T08:00:00Z",
       "scenario": "Certificate of analysis cannot be verified",
-      "expected_disposition": "HOLD",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1006-INSPECTION",
@@ -850,7 +844,6 @@
       "quantity": 425,
       "manufactured_at": "2026-08-04T08:00:00Z",
       "scenario": "Final inspection failed",
-      "expected_disposition": "HOLD",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1007-INSPECTION",
@@ -985,7 +978,6 @@
       "quantity": 450,
       "manufactured_at": "2026-08-01T08:00:00Z",
       "scenario": "Open deviation linked through the context graph",
-      "expected_disposition": "ESCALATE",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1008-INSPECTION",
@@ -1120,7 +1112,6 @@
       "quantity": 475,
       "manufactured_at": "2026-08-02T08:00:00Z",
       "scenario": "Narrative evidence conflicts with structured inspection",
-      "expected_disposition": "ESCALATE",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1009-INSPECTION",
@@ -1271,7 +1262,6 @@
       "quantity": 500,
       "manufactured_at": "2026-08-03T08:00:00Z",
       "scenario": "Connected supplier evidence is stale",
-      "expected_disposition": "ESCALATE",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1010-INSPECTION",
@@ -1406,7 +1396,6 @@
       "quantity": 525,
       "manufactured_at": "2026-08-04T08:00:00Z",
       "scenario": "Required supplier history is missing",
-      "expected_disposition": "ESCALATE",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1011-INSPECTION",
@@ -1524,7 +1513,6 @@
       "quantity": 550,
       "manufactured_at": "2026-08-01T08:00:00Z",
       "scenario": "Authorized evidence passes; restricted distractor must be excluded",
-      "expected_disposition": "PASS",
       "evidence": [
         {
           "evidence_id": "EV-HX-LOT-1012-INSPECTION",

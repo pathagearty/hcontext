@@ -7,9 +7,17 @@ from fastapi import FastAPI, HTTPException
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from .data_store import decision_profile, get_lot, list_lots, load_dataset
+from .comparison_models import ComparisonCase, ComparisonRequest, ComparisonResult, EvaluationSummary
+from .comparison_service import (
+    comparison_cases,
+    evaluation_summary,
+    get_comparison,
+    run_comparison,
+)
+from .data_store import decision_profile, expected_dispositions, get_lot, list_lots, load_dataset
 from .engine import compile_decision
 from .models import DecisionPacket, DecisionRequest, EvaluationReport, EvaluationRow, RetrievalMode
+from .settings import get_settings
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
@@ -24,11 +32,23 @@ app = FastAPI(
 @app.get("/api/health")
 def health() -> dict:
     dataset = load_dataset()
+    settings = get_settings()
     return {
         "status": "ok",
         "dataset_id": dataset["dataset_metadata"]["dataset_id"],
         "synthetic": dataset["dataset_metadata"]["synthetic"],
         "case_count": len(dataset["lots"]),
+        "foundry": settings.foundry_public_status(),
+        "supabase": settings.supabase_public_status(),
+        "comparison": {
+            "available": True,
+            "execution_mode": "SIMULATED_LOCAL",
+            "foundry_live": False,
+            "note": (
+                "Local deterministic preview; Foundry agents and the remote Supabase Data API "
+                "are not invoked on this computer."
+            ),
+        },
         "providers": {
             "mock": {"configured": True, "live_tested": True},
             "azure_foundry": {
@@ -42,6 +62,34 @@ def health() -> dict:
             },
         },
     }
+
+
+@app.get("/api/comparison-cases", response_model=list[ComparisonCase])
+def get_comparison_cases() -> list[ComparisonCase]:
+    """Neutral benchmark subjects; answer-key labels remain evaluator-only."""
+
+    return comparison_cases()
+
+
+@app.post("/api/comparisons", response_model=ComparisonResult)
+def create_comparison(request: ComparisonRequest) -> ComparisonResult:
+    try:
+        return run_comparison(request)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown benchmark lot: {request.lot_id}") from exc
+
+
+@app.get("/api/comparisons/{comparison_run_id}", response_model=ComparisonResult)
+def comparison_detail(comparison_run_id: str) -> ComparisonResult:
+    try:
+        return get_comparison(comparison_run_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown comparison run") from exc
+
+
+@app.get("/api/evaluations/summary", response_model=EvaluationSummary)
+def comparison_evaluation_summary() -> EvaluationSummary:
+    return evaluation_summary()
 
 
 @app.get("/api/profile")
@@ -85,6 +133,7 @@ async def compile_packet(request: DecisionRequest) -> DecisionPacket:
 @app.get("/api/evaluation", response_model=EvaluationReport)
 async def evaluation() -> EvaluationReport:
     dataset = load_dataset()
+    answer_keys = expected_dispositions()
     rows: list[EvaluationRow] = []
     for mode in RetrievalMode:
         correct = 0
@@ -95,7 +144,7 @@ async def evaluation() -> EvaluationReport:
                 DecisionRequest(lot_id=lot["lot_id"], retrieval_mode=mode, provider="mock")
             )
             predicted = packet.disposition.value
-            expected = lot["expected_disposition"]
+            expected = answer_keys[lot["lot_id"]]
             correct += int(predicted == expected)
             critical_false_passes += int(predicted == "PASS" and expected != "PASS")
             over_escalations += int(predicted == "ESCALATE" and expected == "PASS")

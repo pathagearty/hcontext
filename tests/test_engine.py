@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import unittest
 
-from backend.data_store import get_lot, load_dataset
+from backend.data_store import expected_dispositions, get_lot, load_dataset
 from backend.engine import compile_decision
 from backend.models import DecisionRequest, RetrievalMode
 from backend.providers import AzureFoundryExplanationProvider
@@ -19,6 +19,7 @@ class EngineTests(unittest.TestCase):
         self.assertEqual(len({lot["lot_id"] for lot in dataset["lots"]}), 12)
 
     def test_hybrid_mode_matches_all_answer_keys(self) -> None:
+        answer_keys = expected_dispositions()
         for lot in load_dataset()["lots"]:
             with self.subTest(lot=lot["lot_id"]):
                 packet = asyncio.run(
@@ -30,7 +31,7 @@ class EngineTests(unittest.TestCase):
                         )
                     )
                 )
-                self.assertEqual(packet.disposition.value, lot["expected_disposition"])
+                self.assertEqual(packet.disposition.value, answer_keys[lot["lot_id"]])
 
     def test_restricted_distractor_is_excluded(self) -> None:
         lot = get_lot("HX-LOT-1012")

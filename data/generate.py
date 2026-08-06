@@ -4,6 +4,7 @@ import json
 from pathlib import Path
 
 OUTPUT = Path(__file__).parent / "generated" / "hexacontext_demo.json"
+EVALUATION_OUTPUT = Path(__file__).parent / "generated" / "hexacontext_evaluation.json"
 
 
 def evidence(
@@ -159,7 +160,7 @@ def make_case(
     }
 
 
-def build_dataset() -> dict:
+def build_datasets() -> tuple[dict, dict]:
     narrative_conflict = evidence(
         "EV-HX-LOT-1009-NOTE",
         "Operator shift note",
@@ -198,7 +199,19 @@ def build_dataset() -> dict:
         make_case(12, "Authorized evidence passes; restricted distractor must be excluded", "PASS", extra_evidence=[restricted_distractor]),
     ]
 
-    return {
+    runtime_cases = [
+        {key: value for key, value in case.items() if key != "expected_disposition"}
+        for case in cases
+    ]
+    evaluation_cases = [
+        {
+            "lot_id": case["lot_id"],
+            "expected_disposition": case["expected_disposition"],
+        }
+        for case in cases
+    ]
+
+    runtime_dataset = {
         "dataset_metadata": {
             "dataset_id": "hexacontext-manufacturing-demo-v1",
             "created_for": "Sneha HexaContext MVP",
@@ -228,15 +241,33 @@ def build_dataset() -> dict:
                 "Only authorized evidence can enter the packet; a human quality reviewer owns the final disposition.",
             ],
         },
-        "lots": cases,
+        "lots": runtime_cases,
     }
+    evaluation_dataset = {
+        "dataset_id": runtime_dataset["dataset_metadata"]["dataset_id"],
+        "evaluator_only": True,
+        "cases": evaluation_cases,
+    }
+    return runtime_dataset, evaluation_dataset
+
+
+def build_dataset() -> dict:
+    """Compatibility helper returning runtime-safe data only."""
+
+    dataset, _ = build_datasets()
+    return dataset
 
 
 def main() -> None:
-    dataset = build_dataset()
+    dataset, evaluation_dataset = build_datasets()
     OUTPUT.parent.mkdir(parents=True, exist_ok=True)
     OUTPUT.write_text(json.dumps(dataset, indent=2) + "\n", encoding="utf-8")
+    EVALUATION_OUTPUT.write_text(
+        json.dumps(evaluation_dataset, indent=2) + "\n",
+        encoding="utf-8",
+    )
     print(f"wrote {len(dataset['lots'])} synthetic cases to {OUTPUT}")
+    print(f"wrote evaluator-only answer keys to {EVALUATION_OUTPUT}")
 
 
 if __name__ == "__main__":

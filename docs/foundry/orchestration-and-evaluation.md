@@ -406,4 +406,4 @@ cost reduction at enterprise scale
 
 ## Current implementation gap
 
-The repository currently supports local exact/graph/search/hybrid simulation with a deterministic policy and mock explanation. It does not yet implement `/api/comparisons`, live Foundry ephemeral agents, shared external tools, immutable data snapshots or Foundry traces. This plan is the controlling target for the next build.
+The repository currently supports local exact/graph/search/hybrid simulation with a deterministic policy and mock explanation. It also contains typed Foundry settings, a fakeable direct saved-agent client and an evaluator-only answer-key boundary. It does not yet implement `/api/comparisons`, live agent orchestration, shared external tools, immutable data snapshots or Foundry traces. This plan is the controlling architecture target; [`implementation-agent-prompt-evaluation-ui.md`](implementation-agent-prompt-evaluation-ui.md) is the execution-ready build and acceptance prompt for the comparison, telemetry, evaluator and UI work.

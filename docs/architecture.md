@@ -1,6 +1,6 @@
 # Architecture
 
-> **Architecture status:** this file documents the implemented deterministic harness and the original additive-service direction. The controlling target for the next build is the two-agent Foundry comparison in [`handoff-context-packet.md`](handoff-context-packet.md) and [`foundry/README.md`](foundry/README.md). The current local app has not yet implemented those live agents.
+> **Architecture status:** this file documents the deterministic harness and original additive-service direction. The repository now also contains the saved-agent Foundry client/configuration foundation and an evaluator-only answer-key boundary. The controlling target remains the two-agent comparison in [`foundry/cross-computer-implementation-handoff.md`](foundry/cross-computer-implementation-handoff.md); live orchestration is not yet implemented.
 
 ## Architectural intent
 

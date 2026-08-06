@@ -24,25 +24,26 @@ Same user request, actor and data snapshot
 
 The Manufacturing Agent is the business-task agent. The HexaContext Agent is an additive context compiler. HexaContext is not the final manufacturing decision-maker.
 
-## Initial Foundry implementation decision
+## Immediate Foundry implementation decision
 
-Use **Git-versioned ephemeral agents** in the application backend for the first MVP:
+Use the **existing saved per-agent Responses endpoints** for the first live MVP:
 
-- define the model, instructions, tools and schemas in code/files in this repository;
-- call the Foundry project-scoped Responses API from the backend;
-- authenticate locally with an approved developer identity and in Azure with managed identity where supported;
+- keep exact instructions, tools and schemas versioned in this repository and reconcile them with the saved definitions before evaluation;
+- call each verified endpoint from the backend with its matching saved-agent ID/model;
+- authenticate locally with Azure CLI and in Azure with managed identity;
 - keep secrets out of prompts, browser code and Git;
 - capture every prompt/model/tool-contract version with each run.
 
-This is preferable for the first comparison because the two agent definitions remain reviewable and versioned with the application instead of drifting as untracked Playground configuration. After the behavior passes evaluation, the same definitions may be saved/published as versioned prompt or hosted agents with stable endpoints.
+This route is preferred immediately because both endpoint/authentication paths have returned HTTP 200 on the Foundry-connected computer. It does not prove tool execution, schema compliance or decision quality. The definitions still need a version-controlled equivalence check before recorded evaluation.
 
-Microsoft currently documents the project endpoint pattern as:
+The verified saved endpoints require:
 
 ```text
-{FOUNDRY_PROJECT_ENDPOINT}/openai/v1/responses
+api-version=2025-05-15-preview
+model=gpt-5
 ```
 
-and documents Agent Framework's Foundry provider as the recommended Python path for a Git-defined ephemeral agent. Confirm the current SDK/API details in the target project before implementation because Foundry evolves quickly.
+The application now includes a direct `httpx` client for this proven route. Git-defined ephemeral agents through `{FOUNDRY_PROJECT_ENDPOINT}/openai/v1/responses` remain an explicit later route; do not blend the two routes in one experimental condition.
 
 ## Agent inventory
 
@@ -60,6 +61,7 @@ Do not choose exact model names from this document alone. Model availability, st
 - [`tool-contracts.md`](tool-contracts.md) — common read-only tool API and security contract.
 - [`orchestration-and-evaluation.md`](orchestration-and-evaluation.md) — fair comparison, tracing, metrics and acceptance gates.
 - [`setup-checklist.md`](setup-checklist.md) — Foundry project, model, identity, connections, tracing and deployment setup.
+- [`cross-computer-implementation-handoff.md`](cross-computer-implementation-handoff.md) — verified endpoint contract and cross-computer operating procedure.
 
 The broader product/handoff context is in [`../handoff-context-packet.md`](../handoff-context-packet.md).
 
@@ -148,4 +150,4 @@ These are current planning references; the target implementation agent must re-c
 
 ## Status
 
-This directory is a **target implementation specification**. The current app still runs the deterministic local harness in `backend/` and has not yet executed either Foundry agent.
+This directory is a **target implementation specification**. The current app still runs the deterministic local harness. Typed settings and the direct saved-agent client are implemented and unit-tested, but this computer has not executed either Foundry agent and the comparison flow is not built.

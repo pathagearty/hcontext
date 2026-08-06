@@ -25,19 +25,34 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(payload["case_count"], 12)
         self.assertTrue(payload["synthetic"])
 
+    async def test_primary_ui_contains_demo_and_evaluation_layers(self) -> None:
+        response = await self.client.get("/")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("What each path did", response.text)
+        self.assertIn("What HexaContext changed", response.text)
+        self.assertIn("Quality and safety check", (await self.client.get("/static/app.js")).text)
+
     async def test_lot_list_and_detail(self) -> None:
         response = await self.client.get("/api/lots")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(response.json()), 12)
+        self.assertTrue(all("expected_disposition" not in lot for lot in response.json()))
         detail = await self.client.get("/api/lots/HX-LOT-1001")
         self.assertEqual(detail.status_code, 200)
         self.assertEqual(detail.json()["lot_id"], "HX-LOT-1001")
+        self.assertNotIn("expected_disposition", detail.json())
         restricted = (await self.client.get("/api/lots/HX-LOT-1012")).json()
         self.assertEqual(restricted["excluded_restricted_source_count"], 1)
         self.assertNotIn(
             "EV-HX-LOT-1012-RESTRICTED",
             {item["evidence_id"] for item in restricted["evidence"]},
         )
+
+    async def test_evaluator_truth_never_leaves_runtime_endpoints(self) -> None:
+        for path in ("/api/profile", "/api/lots", "/api/lots/HX-LOT-1001"):
+            response = await self.client.get(path)
+            self.assertEqual(response.status_code, 200)
+            self.assertNotIn("expected_disposition", response.text)
 
     async def test_unconfigured_foundry_fails_without_mock_fallback(self) -> None:
         with patch.dict(

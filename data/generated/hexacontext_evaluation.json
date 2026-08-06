@@ -1,0 +1,54 @@
+{
+  "dataset_id": "hexacontext-manufacturing-demo-v1",
+  "evaluator_only": true,
+  "cases": [
+    {
+      "lot_id": "HX-LOT-1001",
+      "expected_disposition": "PASS"
+    },
+    {
+      "lot_id": "HX-LOT-1002",
+      "expected_disposition": "HOLD"
+    },
+    {
+      "lot_id": "HX-LOT-1003",
+      "expected_disposition": "HOLD"
+    },
+    {
+      "lot_id": "HX-LOT-1004",
+      "expected_disposition": "HOLD"
+    },
+    {
+      "lot_id": "HX-LOT-1005",
+      "expected_disposition": "HOLD"
+    },
+    {
+      "lot_id": "HX-LOT-1006",
+      "expected_disposition": "HOLD"
+    },
+    {
+      "lot_id": "HX-LOT-1007",
+      "expected_disposition": "HOLD"
+    },
+    {
+      "lot_id": "HX-LOT-1008",
+      "expected_disposition": "ESCALATE"
+    },
+    {
+      "lot_id": "HX-LOT-1009",
+      "expected_disposition": "ESCALATE"
+    },
+    {
+      "lot_id": "HX-LOT-1010",
+      "expected_disposition": "ESCALATE"
+    },
+    {
+      "lot_id": "HX-LOT-1011",
+      "expected_disposition": "ESCALATE"
+    },
+    {
+      "lot_id": "HX-LOT-1012",
+      "expected_disposition": "PASS"
+    }
+  ]
+}
