@@ -36,18 +36,24 @@ def settings(**overrides: object) -> AppSettings:
         "foundry_enabled": True,
         "foundry_api_version": "2025-05-15-preview",
         "foundry_project_endpoint": "https://example.services.ai.azure.com/api/projects/demo",
-        "foundry_manufacturing_agent_id": "manufacturing-agent",
-        "foundry_manufacturing_agent_endpoint": (
+        "foundry_direct_review_agent_id": "direct-review-agent",
+        "foundry_direct_review_agent_endpoint": (
             "https://example.services.ai.azure.com/api/projects/demo/agents/"
-            "manufacturing-agent/endpoint/protocols/openai/responses?route=saved"
+            "direct-review-agent/endpoint/protocols/openai/responses?route=saved"
         ),
-        "foundry_manufacturing_model": "gpt-5",
-        "foundry_hexacontext_agent_id": "hexacontext-agent",
-        "foundry_hexacontext_agent_endpoint": (
+        "foundry_direct_review_model": "gpt-5",
+        "foundry_hexacontext_compiler_agent_id": "hexacontext-compiler-agent",
+        "foundry_hexacontext_compiler_agent_endpoint": (
             "https://example.services.ai.azure.com/api/projects/demo/agents/"
-            "hexacontext-agent/endpoint/protocols/openai/responses"
+            "hexacontext-compiler-agent/endpoint/protocols/openai/responses"
         ),
-        "foundry_hexacontext_model": "gpt-5",
+        "foundry_hexacontext_compiler_model": "gpt-5",
+        "foundry_context_review_agent_id": "context-review-agent",
+        "foundry_context_review_agent_endpoint": (
+            "https://example.services.ai.azure.com/api/projects/demo/agents/"
+            "context-review-agent/endpoint/protocols/openai/responses"
+        ),
+        "foundry_context_review_model": "gpt-5",
         "foundry_max_retries": 2,
     }
     values.update(overrides)
@@ -92,7 +98,7 @@ class FoundryClientTests(unittest.IsolatedAsyncioTestCase):
         )
         try:
             result = await client.create_response(
-                "manufacturing",
+                "direct_review",
                 input_value="Evaluate the validated request.",
                 response_schema={"type": "object", "additionalProperties": False},
                 schema_name="ManufacturingDecision",
@@ -137,7 +143,7 @@ class FoundryClientTests(unittest.IsolatedAsyncioTestCase):
             try:
                 with self.subTest(status_code=status_code):
                     with self.assertRaises(FoundryHTTPError) as context:
-                        await client.create_response("manufacturing", input_value="hello")
+                        await client.create_response("direct_review", input_value="hello")
                     self.assertEqual(context.exception.status_code, status_code)
                     self.assertEqual(context.exception.attempts, 1)
                     self.assertFalse(context.exception.retryable)
@@ -172,7 +178,7 @@ class FoundryClientTests(unittest.IsolatedAsyncioTestCase):
             sleep=record_sleep,
         )
         try:
-            result = await client.create_response("hexacontext", input_value="hello")
+            result = await client.create_response("hexacontext_compiler", input_value="hello")
         finally:
             await client.aclose()
         self.assertEqual(calls, 2)
@@ -199,7 +205,7 @@ class FoundryClientTests(unittest.IsolatedAsyncioTestCase):
         )
         try:
             with self.assertRaises(FoundryHTTPError) as context:
-                await client.create_response("manufacturing", input_value="hello")
+                await client.create_response("direct_review", input_value="hello")
         finally:
             await client.aclose()
         self.assertEqual(calls, 3)
@@ -228,12 +234,12 @@ class FoundryClientTests(unittest.IsolatedAsyncioTestCase):
             sleep=no_sleep,
         )
         try:
-            result = await client.create_response("manufacturing", input_value="hello")
+            result = await client.create_response("direct_review", input_value="hello")
             self.assertEqual(result.metadata.attempts, 2)
             self.assertEqual(result.metadata.retries[0].reason, "transport")
             with self.assertRaises(ValueError):
                 await client.create_response(
-                    "manufacturing",
+                    "direct_review",
                     input_value="hello",
                     max_output_tokens=0,
                 )
@@ -246,7 +252,7 @@ class FoundryClientTests(unittest.IsolatedAsyncioTestCase):
         client = FoundryClient(settings(), token_provider=provider, transport=httpx.MockTransport(lambda _: None))
         try:
             with self.assertRaises(FoundryAuthenticationError) as context:
-                await client.create_response("manufacturing", input_value="hello")
+                await client.create_response("direct_review", input_value="hello")
         finally:
             await client.aclose()
         self.assertNotIn("raw-token-secret", str(context.exception))

@@ -109,6 +109,45 @@ class SupabaseToolGatewayTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result["errors"][0]["code"], "SOURCE_UNAVAILABLE")
         self.assertNotIn("db down", str(result))
 
+    async def test_v2_relationship_tools_keep_subject_snapshot_and_time_server_bound(self) -> None:
+        captured: list[dict] = []
+
+        def handler(request: httpx.Request) -> httpx.Response:
+            tool_name = request.url.path.rsplit("/", 1)[-1]
+            captured.append({"tool_name": tool_name, "payload": json.loads(request.content)})
+            return httpx.Response(200, json=response_envelope(tool_name))
+
+        gateway = SupabaseToolGateway(
+            settings(), context(), transport=httpx.MockTransport(handler)
+        )
+        try:
+            await gateway.get_lot_work_orders()
+            await gateway.get_work_order_operations("WO-EXACT-001")
+            await gateway.get_operation_equipment_usage("OP-EXACT-010")
+            await gateway.get_connected_equipment_calibration("EQ-EXACT-064")
+            await gateway.get_part_bom("PART-EXACT-017")
+            await gateway.get_lot_component_usage("BOM-EXACT-1")
+            await gateway.get_material_batch_records("MAT-EXACT-017")
+            await gateway.get_engineering_change_orders("PART-EXACT-026")
+        finally:
+            await gateway.aclose()
+
+        self.assertEqual(len(captured), 8)
+        for call in captured:
+            self.assertEqual(call["payload"]["p_subject_lot_id"], "HX-V2-LOT-011")
+            self.assertEqual(call["payload"]["p_snapshot_id"], SNAPSHOT_ID)
+            self.assertNotIn("tenant_id", call["payload"])
+            self.assertNotIn("scopes", call["payload"])
+        timed = {
+            "get_connected_equipment_calibration",
+            "get_part_bom",
+            "get_material_batch_records",
+            "get_engineering_change_orders",
+        }
+        self.assertTrue(
+            all(call["payload"]["p_as_of_time"] == AS_OF_TIME for call in captured if call["tool_name"] in timed)
+        )
+
     async def test_invalid_or_cross_subject_call_never_reaches_source(self) -> None:
         calls = 0
 

@@ -13,10 +13,10 @@ python3 -m compileall -q backend data scripts tests
 node --check frontend/app.js
 python3 -m unittest discover -s tests -v
 supabase db reset --local
-supabase test db supabase/tests/dataset_v1_test.sql --local
-supabase test db supabase/tests/dataset_v1_test.sql --linked
+supabase test db --local
+supabase test db --linked
 supabase db lint --local --level warning
-supabase db advisors --linked --type all --level warn
+supabase db advisors --linked
 ```
 
 Results:
@@ -24,7 +24,7 @@ Results:
 - synthetic generator wrote 12 runtime-safe cases and a separate evaluator-only answer-key fixture;
 - Python syntax compilation passed;
 - frontend JavaScript syntax check passed;
-- 57 engine, API, UI-contract, comparison, telemetry, pricing, settings, Foundry-client, Supabase-generator and Supabase-gateway tests passed;
+- 61 engine, API, UI-contract, comparison, telemetry, pricing, settings, Foundry-client, Supabase-generator, Supabase-gateway and evaluator-store tests passed;
 - one upstream Starlette `TestClient` deprecation warning is emitted under the local Python 3.14 environment; it does not affect the test result.
 
 ## Local comparison preview verification
@@ -71,9 +71,19 @@ The fixed v1 generator produced:
 - hidden evaluator: 124 rows, including 15 case expectations and 109 expected-evidence rows;
 - distribution: 4 `PASS`, 5 `HOLD`, 6 `ESCALATE`.
 
+The deployed v2 benchmark adds:
+
+- snapshot: `hx-mfg-v2-snapshot-001` at `2026-08-01T12:00:00Z`;
+- runtime: 40,295 normalized rows across 2,000 lots;
+- tenants: 1,200 Alpha, 500 Beta and 300 Gamma lots;
+- hidden evaluator: 50 approved case expectations and 435 expected-evidence rows;
+- distribution: 8 `PASS`, 16 `HOLD`, 26 `ESCALATE`;
+- database footprint after deployment: 58 MB total, including 44 MB public and 448 kB private evaluator data;
+- eight new relationship tables and eight new subject-bound runtime RPCs.
+
 Verified locally from a clean database reset and again against the linked remote project:
 
-- all four migration versions match local and remote history;
+- all nine migration versions match local and remote history, and the linked schema diff is empty;
 - zero prohibited answer-bearing runtime columns;
 - all 15 exposed runtime tables have forced RLS;
 - `anon` has no runtime-table or RPC access;
@@ -86,7 +96,11 @@ Verified locally from a clean database reset and again against the linked remote
 - missing supplier history, stale-window history and closed-deviation checks return successful zero-item results;
 - case 10 returns both simultaneously active revisions;
 - cases 09 and 15 return their authorized narrative conflicts through subject-bounded full-text search;
-- all seven read-only operations return the expected remote happy-path result counts;
+- all 15 read-only operations return the expected subject-bounded results;
+- v2 tests reach an expired process calibration at four hops and an invalid material certificate at five hops;
+- all 50 v2 cases have private expected results while authenticated actors cannot execute the private evaluator RPC;
+- the server-only evaluator store retrieved a complete approved remote rubric through the service-role-only endpoint;
+- private trace rows default to `DRAFT` and cannot be approved for fine-tuning without an `APPROVED` review state;
 - Supabase schema lint and linked security/performance advisors report no issues.
 
 The backend gateway tests verify that the subject lot, snapshot and pinned time are server-owned, actor tenant/scopes are absent from tool arguments, the publishable key is paired with the approved user bearer token, the service/secret key is rejected as an evidence identity, and source failures are not converted into missing evidence. A real approved Supabase Auth user JWT has not yet been provisioned; remote RLS verification used the actual `authenticated` role with the intended JWT claim shape.
@@ -174,7 +188,7 @@ Verified:
 - live AWS Bedrock access/model/trace if required;
 - evaluator approval of manufacturing rules and answer keys;
 - approved Supabase Auth demo identities and an end-to-end user-JWT Data API gateway test;
-- Foundry function-call execution over the seven implemented Supabase operations;
+- Foundry function-call execution over the 15 implemented Supabase operations;
 - provider-reported token and live backend latency reconciliation in both comparison arms;
 - approved versioned model pricing, or an explicit capacity-billing policy that keeps per-run cost unavailable;
 - durable, actor-authorized comparison history if the preview becomes a shared multi-user tool;

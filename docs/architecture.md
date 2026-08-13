@@ -1,6 +1,6 @@
 # Architecture
 
-> **Architecture status:** this file documents the deterministic harness and original additive-service direction. The repository now also contains the saved-agent Foundry client/configuration foundation and an evaluator-only answer-key boundary. The controlling target remains the two-agent comparison in [`foundry/cross-computer-implementation-handoff.md`](foundry/cross-computer-implementation-handoff.md); live orchestration is not yet implemented.
+> **Architecture status:** this file contains historical deterministic-harness and additive-service detail. The controlling architecture is now the three-role Context Core + Decision Profile model in [`handoff-context-packet.md`](handoff-context-packet.md). The current comparison remains `SIMULATED_LOCAL`; live Foundry orchestration is not yet implemented. Where this file conflicts with the canonical handoff, the handoff and current code take precedence.
 
 ## Architectural intent
 

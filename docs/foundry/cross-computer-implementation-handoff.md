@@ -59,13 +59,19 @@ The original deterministic harness remains intact. The following cross-computer 
 - the normalized Supabase v1 schema, private evaluator schema, RLS/indexes and seven read-only RPC operations are versioned as four migrations;
 - deterministic generation produces 179 runtime rows and 124 hidden evaluator rows across 15 primary cases plus one cross-tenant shadow lot;
 - runtime and evaluator seeds are separate, and the deployed snapshot is pinned as `hx-mfg-v1-snapshot-001` at `2026-08-01T12:00:00Z`;
+- v1 remains the immutable control snapshot; the primary live dataset is now `hx-mfg-v2-snapshot-001` at the same pinned time;
+- v2 adds 2,000 lots and 40,295 normalized runtime rows across work orders, operations, equipment usage, BOMs, component consumption, material certificates and engineering changes;
+- all 50 v2 Alpha cases have approved private expected results, path-aware evidence rubrics and an 8 `PASS` / 16 `HOLD` / 26 `ESCALATE` distribution;
+- eight additional subject-bound RPCs expose multi-hop evidence without arbitrary SQL, bringing the runtime tool plane to 15 operations;
+- a service-role-only evaluator RPC and private run ledger support UI scoring, trace review and fine-tuning curation without granting either agent answer-key access;
+- the deployed database measured 58 MB after v2 seeding and fits comfortably within the current 500 MB Supabase Free database allowance;
 - every exposed runtime table has forced RLS, `anon` has no read/execute access and `private_eval` has no `anon`/`authenticated` grants;
 - tenant/scopes come only from signed `app_metadata`; remote tests confirmed alpha/beta isolation, restricted-scope exclusion and no `user_metadata` override;
 - native note full-text search and all seven read-only database operations were exercised against the linked Supabase project;
 - `backend/supabase_gateway.py` preserves the approved user JWT, binds the subject/snapshot/time server-side and rejects the service/secret key as an evidence-query identity;
-- a clean local `supabase db reset`, 41 repository tests, schema lint and remote database advisors all pass.
+- a clean local `supabase db reset`, 61 repository tests, both database test suites, schema lint, remote schema diff and remote database advisors all pass.
 
-This is still not a live two-agent comparison. The source/tool substrate exists, but it is not yet connected to a Foundry function-call loop. A real approved Supabase Auth user JWT must also be provisioned and exercised through the remote Data API before claiming full browser/backend/Auth/RLS integration. There is no ContextPacket runtime validator or comparison API yet.
+This is still not a live three-agent comparison. The source/tool and saved-endpoint foundations exist, but they are not yet connected to a Foundry function-call loop. A real approved Supabase Auth user JWT must also be provisioned and exercised through the remote Data API before claiming full browser/backend/Auth/RLS integration. A local deterministic comparison API and Decision Packet contract now exist; live packet validation and Foundry orchestration do not. Read [`../handoff-context-packet.md`](../handoff-context-packet.md) for the controlling current architecture and implementation plan.
 
 ## Local configuration
 
@@ -104,11 +110,14 @@ SUPABASE_URL=
 SUPABASE_PUBLISHABLE_KEY=
 SUPABASE_SECRET_KEY=
 SUPABASE_JWKS_URL=
-SUPABASE_SNAPSHOT_ID=hx-mfg-v1-snapshot-001
+SUPABASE_SNAPSHOT_ID=hx-mfg-v2-snapshot-001
 SUPABASE_AS_OF_TIME=2026-08-01T12:00:00Z
+EVALUATOR_UI_TOKEN=
 ```
 
 `SUPABASE_SECRET_KEY` is limited to migrations, trusted seeding and evaluator/admin work. Normal evidence queries use the publishable key plus an approved user access token whose `app_metadata` contains the tenant and scopes. Neither key enters Foundry or browser code.
+
+`EVALUATOR_UI_TOKEN` is a separate operator credential for the post-run rubric endpoint. Do not embed it in a browser bundle or give it to either agent. See [`../supabase-context-benchmark-v2.md`](../supabase-context-benchmark-v2.md) for the complete scoring-plane boundary and v2 verification instructions.
 
 ## Safe live smoke test on the other computer
 

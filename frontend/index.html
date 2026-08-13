@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A side-by-side evaluation of a manufacturing agent with and without HexaContext.">
-  <title>HexaContext — Manufacturing Agent Evaluation</title>
+  <meta name="description" content="A controlled three-agent evaluation of synthetic material-deviation decision readiness with and without HexaContext.">
+  <title>HexaContext — Material Deviation Readiness</title>
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
@@ -31,13 +31,13 @@
 
     <section id="comparison" class="hero section-anchor">
       <div class="hero-copy">
-        <p class="eyebrow">Manufacturing readiness evaluation</p>
+        <p class="eyebrow">Synthetic material-deviation readiness</p>
         <h1>Is better context worth the extra work?</h1>
-        <p>Run the same manufacturing request through the same decision agent—with and without a HexaContext compilation step—and inspect the quality, safety, token, tool, latency, and cost tradeoff.</p>
+        <p>Compare a Direct Review Agent that reconciles fragmented source-domain evidence against a HexaContext Compiler that projects one Decision Profile from a persistent Manufacturing Context Core and feeds a Context-Assisted Review Agent. Both recommend readiness; a qualified human retains disposition authority.</p>
       </div>
       <div class="hero-question">
         <span>Evaluation question</span>
-        <strong>Does HexaContext improve evidence and decision quality enough to justify its overhead?</strong>
+        <strong>Does governed, connected, minimum-sufficient context improve decision support enough to justify compiler and packet overhead?</strong>
       </div>
     </section>
 
@@ -51,20 +51,21 @@
         <div class="control-fact"><span>Actor</span><strong id="actor-label">Server-owned synthetic reviewer</strong></div>
         <div class="control-fact"><span>Snapshot</span><strong id="snapshot-label">Loading…</strong></div>
         <div class="control-fact"><span>Decision profile</span><strong id="profile-label">manufacturing_lot_disposition_v1</strong></div>
+        <div class="control-fact"><span>Context Core</span><strong id="core-label">manufacturing_context_core</strong></div>
         <button id="run-button" class="primary-button" type="button">
           <span>Run comparison</span><b aria-hidden="true">→</b>
         </button>
       </div>
       <div class="flow-compare" aria-label="Comparison architecture">
-        <div class="shared-input"><span>Same request</span><small>actor · profile · snapshot · tools</small></div>
+        <div class="shared-input"><span>Same controlled conditions</span><small>case · evidence universe · actor · permissions · task · rules · output contract</small></div>
         <div class="flow-split" aria-hidden="true"></div>
         <div class="flow-arm direct-flow">
           <span class="flow-number">A</span>
-          <div><strong>Foundry Direct</strong><small>Manufacturing Agent → tools → decision</small></div>
+          <div><strong>Agent 1 · Direct</strong><small>Request → fragmented source tools → reconciliation → recommendation</small></div>
         </div>
         <div class="flow-arm hexa-flow">
           <span class="flow-number">B</span>
-          <div><strong>With HexaContext</strong><small>Compiler → ContextPacket → Manufacturing Agent</small></div>
+          <div><strong>Agents 2 + 3 · HexaContext</strong><small>Context Core + Decision Profile → Compiler → Decision Packet → assisted review</small></div>
         </div>
       </div>
     </section>
@@ -102,7 +103,7 @@
 
       <section class="arm-section" aria-labelledby="arm-title">
         <div class="section-heading compact-heading">
-          <div><p class="eyebrow">Side-by-side result</p><h2 id="arm-title">Same decision task, different context path</h2></div>
+          <div><p class="eyebrow">Side-by-side result</p><h2 id="arm-title">Same readiness task, different context path</h2></div>
           <p>Both columns use equal visual weight. Safety failures are highlighted consistently on either side.</p>
         </div>
         <div class="arm-grid">
@@ -128,7 +129,7 @@
       <div class="aggregate-layout">
         <div class="aggregate-table-wrap">
           <table>
-            <thead><tr><th>Metric</th><th>Foundry Direct</th><th>With HexaContext</th><th>Delta</th></tr></thead>
+            <thead><tr><th>Metric</th><th>Direct Review Agent</th><th>With HexaContext</th><th>Delta</th></tr></thead>
             <tbody id="aggregate-body"><tr><td colspan="4">Calculating controlled cases…</td></tr></tbody>
           </table>
         </div>
@@ -150,10 +151,12 @@
         <div><p class="eyebrow">Method & limits</p><h2>What the comparison does—and does not—prove</h2></div>
       </div>
       <div class="method-grid">
-        <article><span>Controlled</span><h3>Same conditions</h3><p>Request, actor, tenant, site, snapshot, Decision Profile, Manufacturing Agent contract, evidence schema, and tool plane are frozen for both arms.</p></article>
+        <article><span>Controlled</span><h3>Same conditions—not the same access path</h3><p>Case, evidence universe, actor, tenant, site, snapshot, task, decision criteria, recommendation schema, and human authority are frozen. Direct Review uses fragmented source tools. The compiler uses the Context Core plus Decision Profile; assisted review receives only the Decision Packet.</p></article>
         <article><span>Private</span><h3>Score after results</h3><p>The runtime paths do not receive expected answers. The synthetic evaluator reads its separate answer key only after both results exist.</p></article>
         <article><span>Estimated</span><h3>Cost is not billing</h3><p>The app can estimate variable model cost from provider tokens and an approved pricing catalog. Azure Cost Management remains the later billing source of truth.</p></article>
-        <article><span>Bounded</span><h3>Small synthetic MVP</h3><p>Fifteen designed cases can reveal implementation and safety failures. They cannot establish production accuracy, compliance, or customer ROI.</p></article>
+        <article><span>Bounded</span><h3>Seagate-inspired, not Seagate-internal</h3><p>Fifteen designed synthetic cases can reveal implementation and safety failures. They do not assert Seagate's internal workflow or establish production accuracy, compliance, or ROI.</p></article>
+        <article><span>Reusable</span><h3>The core is not the packet</h3><p>The persistent Manufacturing Context Core is shared and updateable. A Decision Profile specifies what a task needs. Each Decision Packet is only a case-specific, source-linked projection for one review.</p></article>
+        <article><span>Implemented</span><h3>PostgreSQL graph semantics</h3><p>Supabase stores canonical entities, typed relationships, provenance, authority, temporal validity, policy controls, reusable profiles, packet lineage, and update events. A dedicated graph database is not required for this bounded proof.</p></article>
       </div>
     </section>
 

@@ -16,38 +16,38 @@ select '1..1';
 set local role service_role;
 
 select pg_temp.assert_true(
-  (select count(*) = 1 from public.dataset_snapshots),
-  'one immutable snapshot is seeded'
+  (select count(*) = 1 from public.dataset_snapshots where snapshot_id = 'hx-mfg-v1-snapshot-001'),
+  'the immutable v1 snapshot is seeded'
 );
 select pg_temp.assert_true(
   (
     select sum(row_count) = 179
     from (
-      select count(*) row_count from public.dataset_snapshots union all
-      select count(*) from public.organizations union all
-      select count(*) from public.sites union all
-      select count(*) from public.suppliers union all
-      select count(*) from public.parts union all
-      select count(*) from public.equipment union all
-      select count(*) from public.manufacturing_lots union all
-      select count(*) from public.inspections union all
-      select count(*) from public.certificates_of_analysis union all
-      select count(*) from public.calibration_records union all
-      select count(*) from public.engineering_revisions union all
-      select count(*) from public.supplier_quality_events union all
-      select count(*) from public.deviations union all
-      select count(*) from public.manufacturing_notes union all
-      select count(*) from public.decision_profiles
+      select count(*) row_count from public.dataset_snapshots where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.organizations where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.sites where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.suppliers where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.parts where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.equipment where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.manufacturing_lots where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.inspections where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.certificates_of_analysis where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.calibration_records where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.engineering_revisions where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.supplier_quality_events where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.deviations where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.manufacturing_notes where snapshot_id = 'hx-mfg-v1-snapshot-001' union all
+      select count(*) from public.decision_profiles where snapshot_id = 'hx-mfg-v1-snapshot-001'
     ) counts
   ),
   'runtime seed has 179 normalized rows'
 );
 select pg_temp.assert_true(
-  (select count(*) = 15 from public.manufacturing_lots where tenant_id = 'HX-TENANT-ALPHA'),
+  (select count(*) = 15 from public.manufacturing_lots where tenant_id = 'HX-TENANT-ALPHA' and snapshot_id = 'hx-mfg-v1-snapshot-001'),
   'primary tenant has 15 lots'
 );
 select pg_temp.assert_true(
-  (select count(*) = 1 from public.manufacturing_lots where tenant_id = 'HX-TENANT-BETA'),
+  (select count(*) = 1 from public.manufacturing_lots where tenant_id = 'HX-TENANT-BETA' and snapshot_id = 'hx-mfg-v1-snapshot-001'),
   'shadow tenant has one collision lot'
 );
 select pg_temp.assert_true(
@@ -119,8 +119,8 @@ set local role authenticated;
 set local request.jwt.claims = '{"app_metadata":{"tenant_id":"HX-TENANT-ALPHA","scopes":["quality","general"]},"user_metadata":{"tenant_id":"HX-TENANT-BETA","scopes":["restricted_hr"]}}';
 
 select pg_temp.assert_true(
-  (select count(*) = 15 from public.manufacturing_lots)
-    and (select count(*) = 2 from public.manufacturing_notes),
+  (select count(*) = 15 from public.manufacturing_lots where snapshot_id = 'hx-mfg-v1-snapshot-001')
+    and (select count(*) = 2 from public.manufacturing_notes where snapshot_id = 'hx-mfg-v1-snapshot-001'),
   'alpha app_metadata sees 15 lots and two authorized notes'
 );
 select pg_temp.assert_true(
@@ -177,7 +177,7 @@ select pg_temp.assert_true(
   'case 10 preserves both active released revisions'
 );
 select pg_temp.assert_true(
-  (select count(*) = 0 from public.manufacturing_notes where note_id = 'HX-V2-NOTE-013'),
+  (select count(*) = 0 from public.manufacturing_notes where note_id = 'HX-V2-NOTE-013' and snapshot_id = 'hx-mfg-v1-snapshot-001'),
   'case 13 restricted note is invisible to quality/general'
 );
 select pg_temp.assert_true(
@@ -191,7 +191,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"app_metadata":{"tenant_id":"HX-TENANT-ALPHA","scopes":["quality","general","restricted_hr"]}}';
 select pg_temp.assert_true(
-  (select count(*) = 3 from public.manufacturing_notes),
+  (select count(*) = 3 from public.manufacturing_notes where snapshot_id = 'hx-mfg-v1-snapshot-001'),
   'restricted scope reveals the third alpha note'
 );
 
@@ -199,8 +199,8 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"app_metadata":{"tenant_id":"HX-TENANT-BETA","scopes":["quality","general"]}}';
 select pg_temp.assert_true(
-  (select count(*) = 1 from public.manufacturing_lots)
-    and (select count(*) = 1 from public.inspections where result = 'FAILED' and critical_defect_count = 2),
+  (select count(*) = 1 from public.manufacturing_lots where snapshot_id = 'hx-mfg-v1-snapshot-001')
+    and (select count(*) = 1 from public.inspections where result = 'FAILED' and critical_defect_count = 2 and snapshot_id = 'hx-mfg-v1-snapshot-001'),
   'beta sees only its failing shadow lot'
 );
 
@@ -208,7 +208,7 @@ reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"app_metadata":{"tenant_id":"HX-TENANT-ALPHA","scopes":["quality"]}}';
 select pg_temp.assert_true(
-  (select count(*) = 0 from public.manufacturing_notes),
+  (select count(*) = 0 from public.manufacturing_notes where snapshot_id = 'hx-mfg-v1-snapshot-001'),
   'quality-only scope cannot read general or restricted notes'
 );
 

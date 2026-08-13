@@ -2,8 +2,10 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+import secrets
 
-from fastapi import FastAPI, HTTPException
+import httpx
+from fastapi import FastAPI, Header, HTTPException, Response
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
@@ -18,14 +20,15 @@ from .data_store import decision_profile, expected_dispositions, get_lot, list_l
 from .engine import compile_decision
 from .models import DecisionPacket, DecisionRequest, EvaluationReport, EvaluationRow, RetrievalMode
 from .settings import get_settings
+from .supabase_evaluator import SupabaseEvaluatorStore
 
 ROOT = Path(__file__).resolve().parents[1]
 FRONTEND = ROOT / "frontend"
 
 app = FastAPI(
     title="HexaContext MVP",
-    version="0.1.0",
-    description="Governed hybrid context compiler for a synthetic manufacturing decision profile.",
+    version="0.2.0",
+    description="Three-agent material-deviation decision-readiness comparison using synthetic manufacturing evidence.",
 )
 
 
@@ -42,10 +45,12 @@ def health() -> dict:
         "supabase": settings.supabase_public_status(),
         "comparison": {
             "available": True,
+            "workflow_id": "synthetic_material_deviation_readiness_v1",
+            "target_foundry_agent_count": 3,
             "execution_mode": "SIMULATED_LOCAL",
             "foundry_live": False,
             "note": (
-                "Local deterministic preview; Foundry agents and the remote Supabase Data API "
+                "Local deterministic preview; the three Foundry agents and the remote Supabase Data API "
                 "are not invoked on this computer."
             ),
         },
@@ -90,6 +95,36 @@ def comparison_detail(comparison_run_id: str) -> ComparisonResult:
 @app.get("/api/evaluations/summary", response_model=EvaluationSummary)
 def comparison_evaluation_summary() -> EvaluationSummary:
     return evaluation_summary()
+
+
+@app.get("/api/evaluator/cases/{lot_id}")
+async def private_case_evaluation(
+    lot_id: str,
+    response: Response,
+    x_evaluator_token: str | None = Header(default=None, alias="X-Evaluator-Token"),
+) -> dict:
+    """Operator-only answer key for post-run scoring and review.
+
+    This route is never included in an agent tool definition. It is disabled
+    until a separate operator token is configured and uses the server-only
+    Supabase secret solely through the private evaluator store.
+    """
+
+    settings = get_settings()
+    if not settings.evaluator_ui_token:
+        raise HTTPException(status_code=503, detail="Private evaluator UI access is disabled")
+    if not x_evaluator_token or not secrets.compare_digest(
+        x_evaluator_token, settings.evaluator_ui_token
+    ):
+        raise HTTPException(status_code=401, detail="Evaluator authorization required")
+    response.headers["Cache-Control"] = "no-store, private"
+    try:
+        async with SupabaseEvaluatorStore(settings) as evaluator:
+            return await evaluator.get_case(lot_id, settings.supabase_snapshot_id)
+    except KeyError as exc:
+        raise HTTPException(status_code=404, detail="Unknown evaluation case") from exc
+    except (httpx.HTTPError, ValueError) as exc:
+        raise HTTPException(status_code=502, detail="Private evaluator source unavailable") from exc
 
 
 @app.get("/api/profile")

@@ -333,3 +333,116 @@ class SupabaseToolGateway:
                 "p_snapshot_id": self.context.snapshot_id,
             },
         )
+
+    async def get_lot_work_orders(self) -> dict[str, Any]:
+        return await self._rpc(
+            "get_lot_work_orders",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )
+
+    async def get_work_order_operations(self, work_order_id: str) -> dict[str, Any]:
+        try:
+            self._require_identifier("work_order_id", work_order_id)
+        except ValueError as error:
+            return self._invalid("get_work_order_operations", str(error))
+        return await self._rpc(
+            "get_work_order_operations",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_work_order_id": work_order_id,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )
+
+    async def get_operation_equipment_usage(self, operation_id: str) -> dict[str, Any]:
+        try:
+            self._require_identifier("operation_id", operation_id)
+        except ValueError as error:
+            return self._invalid("get_operation_equipment_usage", str(error))
+        return await self._rpc(
+            "get_operation_equipment_usage",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_operation_id": operation_id,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )
+
+    async def get_connected_equipment_calibration(
+        self, equipment_id: str
+    ) -> dict[str, Any]:
+        try:
+            self._require_identifier("equipment_id", equipment_id)
+        except ValueError as error:
+            return self._invalid("get_connected_equipment_calibration", str(error))
+        return await self._rpc(
+            "get_connected_equipment_calibration",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_equipment_id": equipment_id,
+                "p_as_of_time": self.context.as_of_time,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )
+
+    async def get_part_bom(self, part_id: str) -> dict[str, Any]:
+        try:
+            self._require_identifier("part_id", part_id)
+        except ValueError as error:
+            return self._invalid("get_part_bom", str(error))
+        return await self._rpc(
+            "get_part_bom",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_part_id": part_id,
+                "p_as_of_time": self.context.as_of_time,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )
+
+    async def get_lot_component_usage(self, bom_item_id: str) -> dict[str, Any]:
+        try:
+            self._require_identifier("bom_item_id", bom_item_id)
+        except ValueError as error:
+            return self._invalid("get_lot_component_usage", str(error))
+        return await self._rpc(
+            "get_lot_component_usage",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_bom_item_id": bom_item_id,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )
+
+    async def get_material_batch_records(self, material_batch_id: str) -> dict[str, Any]:
+        try:
+            self._require_identifier("material_batch_id", material_batch_id)
+        except ValueError as error:
+            return self._invalid("get_material_batch_records", str(error))
+        return await self._rpc(
+            "get_material_batch_records",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_material_batch_id": material_batch_id,
+                "p_as_of_time": self.context.as_of_time,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )
+
+    async def get_engineering_change_orders(self, part_id: str) -> dict[str, Any]:
+        try:
+            self._require_identifier("part_id", part_id)
+        except ValueError as error:
+            return self._invalid("get_engineering_change_orders", str(error))
+        return await self._rpc(
+            "get_engineering_change_orders",
+            {
+                "p_subject_lot_id": self.context.subject_lot_id,
+                "p_part_id": part_id,
+                "p_as_of_time": self.context.as_of_time,
+                "p_snapshot_id": self.context.snapshot_id,
+            },
+        )

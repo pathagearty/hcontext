@@ -1,6 +1,6 @@
 # Business and Product Review
 
-> **Document status:** this review established the bounded additive-layer direction. The controlling next experiment is now the direct-versus-HexaContext two-agent Foundry comparison described in [`handoff-context-packet.md`](handoff-context-packet.md) and [`foundry/orchestration-and-evaluation.md`](foundry/orchestration-and-evaluation.md).
+> **Document status:** this review established the bounded additive-layer direction. The controlling product and experiment definition is now the explicit three-role, persistent-Context-Core architecture in [`handoff-context-packet.md`](handoff-context-packet.md). Treat older agent counts or packet-centric language below as historical analysis.
 
 ## Executive verdict
 

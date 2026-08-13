@@ -52,7 +52,7 @@ class ComparisonApiTests(unittest.TestCase):
         payload = response.json()
         self.assertEqual(payload["attempted_cases"], 15)
         self.assertEqual(payload["execution_mode"], "SIMULATED_LOCAL")
-        self.assertIn("does not manufacture", payload["note"])
+        self.assertIn("Foundry runs remain required", payload["note"])
 
 
 if __name__ == "__main__":

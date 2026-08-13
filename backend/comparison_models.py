@@ -25,7 +25,7 @@ class MetricAvailability(str, Enum):
 
 
 class ComparisonRequest(BaseModel):
-    task: str = Field(default="Assess manufacturing lot disposition readiness", max_length=300)
+    task: str = Field(default="Assess material-deviation disposition readiness", max_length=300)
     lot_id: str = Field(pattern=r"^HX-V2-LOT-[0-9]{3}$")
     decision_profile_id: str = Field(default="manufacturing_lot_disposition_v1", max_length=100)
     hexacontext_mode: Literal["hydrate"] = "hydrate"
@@ -44,16 +44,48 @@ class FrozenControls(BaseModel):
     as_of_time: str
     decision_profile_id: str
     decision_profile_version: str
+    context_core_id: str
+    context_core_version: str
     tool_contract_version: str
+    workflow_id: str
+    independent_variable: str
+    controlled_invariants: list[str]
     execution_mode: Literal["SIMULATED_LOCAL", "FOUNDRY_LIVE"]
+
+
+class AgentRoleSummary(BaseModel):
+    role_key: Literal["direct_review", "hexacontext_compiler", "context_assisted_review"]
+    label: str
+    arm: Literal["DIRECT", "WITH_HEXACONTEXT"]
+    responsibility: str
+    input_contract: str
+    tool_access: Literal[
+        "FRAGMENTED_SOURCE_TOOLS",
+        "CONTEXT_CORE_QUERY",
+        "DECISION_PACKET_ONLY",
+    ]
+    output_contract: str
+    makes_final_decision: bool = False
 
 
 class EvidenceSummary(BaseModel):
     evidence_class: str
+    source_domain: Literal[
+        "MANUFACTURING_EXECUTION",
+        "QUALITY_MANAGEMENT",
+        "ENGINEERING_LIFECYCLE",
+        "EQUIPMENT_CALIBRATION",
+        "SUPPLIER_QUALITY",
+        "POLICY_REGISTRY",
+    ]
+    source_table: str
+    source_system: str
     source_record_id: str
     title: str
     authority: str
     observed_at: str
+    relationship_path: list[str] = Field(default_factory=list)
+    selection_reason: str = ""
 
 
 class FindingSummary(BaseModel):
@@ -124,7 +156,7 @@ class ComparisonArmResult(BaseModel):
     findings: FindingSummary
     tool_timeline: list[ToolTraceItem]
     metrics: ArmMetrics
-    context_packet_summary: dict | None = None
+    decision_packet_summary: dict | None = None
     limitations: list[str] = Field(default_factory=list)
 
 
@@ -167,6 +199,7 @@ class ComparisonResult(BaseModel):
     comparison_run_id: str
     status: RunStatus
     synthetic: bool = True
+    agent_roles: list[AgentRoleSummary]
     controls: FrozenControls
     baseline: ComparisonArmResult
     hexacontext: ComparisonArmResult

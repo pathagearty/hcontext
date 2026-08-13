@@ -11,7 +11,7 @@ run:
 	python3 -m uvicorn backend.app:app --host 127.0.0.1 --port 8010
 
 supabase-test:
-	supabase test db supabase/tests/dataset_v1_test.sql --local
+	supabase test db --local
 
 verify: data
 	python3 -m compileall -q backend data scripts tests
