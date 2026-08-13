@@ -30,7 +30,7 @@ class SupabaseConfigurationError(ValueError):
 
 @dataclass(frozen=True)
 class FoundryAgentConfig:
-    name: Literal["manufacturing", "hexacontext"]
+    name: Literal["direct_review", "hexacontext_compiler", "context_assisted_review"]
     agent_id: str
     endpoint: str
     model: str
@@ -55,12 +55,15 @@ class AppSettings(BaseSettings):
     foundry_enabled: bool = False
     foundry_api_version: str = "2025-05-15-preview"
     foundry_project_endpoint: str = ""
-    foundry_manufacturing_agent_id: str = ""
-    foundry_manufacturing_agent_endpoint: str = ""
-    foundry_manufacturing_model: str = ""
-    foundry_hexacontext_agent_id: str = ""
-    foundry_hexacontext_agent_endpoint: str = ""
-    foundry_hexacontext_model: str = ""
+    foundry_direct_review_agent_id: str = ""
+    foundry_direct_review_agent_endpoint: str = ""
+    foundry_direct_review_model: str = ""
+    foundry_hexacontext_compiler_agent_id: str = ""
+    foundry_hexacontext_compiler_agent_endpoint: str = ""
+    foundry_hexacontext_compiler_model: str = ""
+    foundry_context_review_agent_id: str = ""
+    foundry_context_review_agent_endpoint: str = ""
+    foundry_context_review_model: str = ""
     foundry_auth_mode: Literal["auto", "azure_cli", "managed_identity"] = "auto"
     foundry_managed_identity_client_id: str = ""
     foundry_timeout_seconds: float = Field(default=120.0, gt=0, le=300)
@@ -73,19 +76,23 @@ class AppSettings(BaseSettings):
     supabase_publishable_key: str = ""
     supabase_secret_key: str = ""
     supabase_jwks_url: str = ""
-    supabase_snapshot_id: str = "hx-mfg-v1-snapshot-001"
+    supabase_snapshot_id: str = "hx-mfg-v2-snapshot-001"
     supabase_as_of_time: str = "2026-08-01T12:00:00Z"
     supabase_timeout_seconds: float = Field(default=15.0, gt=0, le=60)
+    evaluator_ui_token: str = ""
 
     @field_validator(
         "foundry_api_version",
         "foundry_project_endpoint",
-        "foundry_manufacturing_agent_id",
-        "foundry_manufacturing_agent_endpoint",
-        "foundry_manufacturing_model",
-        "foundry_hexacontext_agent_id",
-        "foundry_hexacontext_agent_endpoint",
-        "foundry_hexacontext_model",
+        "foundry_direct_review_agent_id",
+        "foundry_direct_review_agent_endpoint",
+        "foundry_direct_review_model",
+        "foundry_hexacontext_compiler_agent_id",
+        "foundry_hexacontext_compiler_agent_endpoint",
+        "foundry_hexacontext_compiler_model",
+        "foundry_context_review_agent_id",
+        "foundry_context_review_agent_endpoint",
+        "foundry_context_review_model",
         "foundry_managed_identity_client_id",
         "supabase_project_ref",
         "supabase_url",
@@ -94,6 +101,7 @@ class AppSettings(BaseSettings):
         "supabase_jwks_url",
         "supabase_snapshot_id",
         "supabase_as_of_time",
+        "evaluator_ui_token",
         mode="before",
     )
     @classmethod
@@ -124,12 +132,15 @@ class AppSettings(BaseSettings):
         required = {
             "FOUNDRY_API_VERSION": self.foundry_api_version,
             "FOUNDRY_PROJECT_ENDPOINT": self.foundry_project_endpoint,
-            "FOUNDRY_MANUFACTURING_AGENT_ID": self.foundry_manufacturing_agent_id,
-            "FOUNDRY_MANUFACTURING_AGENT_ENDPOINT": self.foundry_manufacturing_agent_endpoint,
-            "FOUNDRY_MANUFACTURING_MODEL": self.foundry_manufacturing_model,
-            "FOUNDRY_HEXACONTEXT_AGENT_ID": self.foundry_hexacontext_agent_id,
-            "FOUNDRY_HEXACONTEXT_AGENT_ENDPOINT": self.foundry_hexacontext_agent_endpoint,
-            "FOUNDRY_HEXACONTEXT_MODEL": self.foundry_hexacontext_model,
+            "FOUNDRY_DIRECT_REVIEW_AGENT_ID": self.foundry_direct_review_agent_id,
+            "FOUNDRY_DIRECT_REVIEW_AGENT_ENDPOINT": self.foundry_direct_review_agent_endpoint,
+            "FOUNDRY_DIRECT_REVIEW_MODEL": self.foundry_direct_review_model,
+            "FOUNDRY_HEXACONTEXT_COMPILER_AGENT_ID": self.foundry_hexacontext_compiler_agent_id,
+            "FOUNDRY_HEXACONTEXT_COMPILER_AGENT_ENDPOINT": self.foundry_hexacontext_compiler_agent_endpoint,
+            "FOUNDRY_HEXACONTEXT_COMPILER_MODEL": self.foundry_hexacontext_compiler_model,
+            "FOUNDRY_CONTEXT_REVIEW_AGENT_ID": self.foundry_context_review_agent_id,
+            "FOUNDRY_CONTEXT_REVIEW_AGENT_ENDPOINT": self.foundry_context_review_agent_endpoint,
+            "FOUNDRY_CONTEXT_REVIEW_MODEL": self.foundry_context_review_model,
         }
         issues.extend(f"{name} is required" for name, value in required.items() if not value.strip())
 
@@ -139,13 +150,18 @@ class AppSettings(BaseSettings):
         for field_name, value, is_agent_endpoint in (
             ("FOUNDRY_PROJECT_ENDPOINT", self.foundry_project_endpoint, False),
             (
-                "FOUNDRY_MANUFACTURING_AGENT_ENDPOINT",
-                self.foundry_manufacturing_agent_endpoint,
+                "FOUNDRY_DIRECT_REVIEW_AGENT_ENDPOINT",
+                self.foundry_direct_review_agent_endpoint,
                 True,
             ),
             (
-                "FOUNDRY_HEXACONTEXT_AGENT_ENDPOINT",
-                self.foundry_hexacontext_agent_endpoint,
+                "FOUNDRY_HEXACONTEXT_COMPILER_AGENT_ENDPOINT",
+                self.foundry_hexacontext_compiler_agent_endpoint,
+                True,
+            ),
+            (
+                "FOUNDRY_CONTEXT_REVIEW_AGENT_ENDPOINT",
+                self.foundry_context_review_agent_endpoint,
                 True,
             ),
         ):
@@ -156,14 +172,19 @@ class AppSettings(BaseSettings):
 
         endpoint_pairs = (
             (
-                "manufacturing",
-                self.foundry_manufacturing_agent_id,
-                self.foundry_manufacturing_agent_endpoint,
+                "direct_review",
+                self.foundry_direct_review_agent_id,
+                self.foundry_direct_review_agent_endpoint,
             ),
             (
-                "hexacontext",
-                self.foundry_hexacontext_agent_id,
-                self.foundry_hexacontext_agent_endpoint,
+                "hexacontext_compiler",
+                self.foundry_hexacontext_compiler_agent_id,
+                self.foundry_hexacontext_compiler_agent_endpoint,
+            ),
+            (
+                "context_review",
+                self.foundry_context_review_agent_id,
+                self.foundry_context_review_agent_endpoint,
             ),
         )
         for label, agent_id, endpoint in endpoint_pairs:
@@ -177,17 +198,12 @@ class AppSettings(BaseSettings):
                         f"FOUNDRY_{label.upper()}_AGENT_ID does not match its configured endpoint"
                     )
 
-        if (
-            self.foundry_manufacturing_agent_id
-            and self.foundry_manufacturing_agent_id == self.foundry_hexacontext_agent_id
-        ):
-            issues.append("Manufacturing and HexaContext agent IDs must be distinct")
-        if (
-            self.foundry_manufacturing_agent_endpoint
-            and self.foundry_manufacturing_agent_endpoint
-            == self.foundry_hexacontext_agent_endpoint
-        ):
-            issues.append("Manufacturing and HexaContext agent endpoints must be distinct")
+        configured_ids = [agent_id for _, agent_id, _ in endpoint_pairs if agent_id]
+        if len(configured_ids) != len(set(configured_ids)):
+            issues.append("All three Foundry agent IDs must be distinct")
+        configured_endpoints = [endpoint for _, _, endpoint in endpoint_pairs if endpoint]
+        if len(configured_endpoints) != len(set(configured_endpoints)):
+            issues.append("All three Foundry agent endpoints must be distinct")
 
         return issues
 
@@ -196,21 +212,31 @@ class AppSettings(BaseSettings):
         if issues:
             raise FoundryConfigurationError(issues)
 
-    def foundry_agent(self, name: Literal["manufacturing", "hexacontext"]) -> FoundryAgentConfig:
+    def foundry_agent(
+        self,
+        name: Literal["direct_review", "hexacontext_compiler", "context_assisted_review"],
+    ) -> FoundryAgentConfig:
         self.require_foundry()
-        if name == "manufacturing":
+        if name == "direct_review":
             return FoundryAgentConfig(
                 name=name,
-                agent_id=self.foundry_manufacturing_agent_id,
-                endpoint=self.foundry_manufacturing_agent_endpoint,
-                model=self.foundry_manufacturing_model,
+                agent_id=self.foundry_direct_review_agent_id,
+                endpoint=self.foundry_direct_review_agent_endpoint,
+                model=self.foundry_direct_review_model,
             )
-        if name == "hexacontext":
+        if name == "hexacontext_compiler":
             return FoundryAgentConfig(
                 name=name,
-                agent_id=self.foundry_hexacontext_agent_id,
-                endpoint=self.foundry_hexacontext_agent_endpoint,
-                model=self.foundry_hexacontext_model,
+                agent_id=self.foundry_hexacontext_compiler_agent_id,
+                endpoint=self.foundry_hexacontext_compiler_agent_endpoint,
+                model=self.foundry_hexacontext_compiler_model,
+            )
+        if name == "context_assisted_review":
+            return FoundryAgentConfig(
+                name=name,
+                agent_id=self.foundry_context_review_agent_id,
+                endpoint=self.foundry_context_review_agent_endpoint,
+                model=self.foundry_context_review_model,
             )
         raise ValueError(f"Unknown Foundry agent role: {name}")
 
@@ -221,15 +247,20 @@ class AppSettings(BaseSettings):
             "configured": self.foundry_enabled and not issues,
             "api_version_configured": bool(self.foundry_api_version),
             "project_endpoint_configured": bool(self.foundry_project_endpoint),
-            "manufacturing_agent": {
-                "agent_id_configured": bool(self.foundry_manufacturing_agent_id),
-                "endpoint_configured": bool(self.foundry_manufacturing_agent_endpoint),
-                "model_configured": bool(self.foundry_manufacturing_model),
+            "direct_review_agent": {
+                "agent_id_configured": bool(self.foundry_direct_review_agent_id),
+                "endpoint_configured": bool(self.foundry_direct_review_agent_endpoint),
+                "model_configured": bool(self.foundry_direct_review_model),
             },
-            "hexacontext_agent": {
-                "agent_id_configured": bool(self.foundry_hexacontext_agent_id),
-                "endpoint_configured": bool(self.foundry_hexacontext_agent_endpoint),
-                "model_configured": bool(self.foundry_hexacontext_model),
+            "hexacontext_compiler_agent": {
+                "agent_id_configured": bool(self.foundry_hexacontext_compiler_agent_id),
+                "endpoint_configured": bool(self.foundry_hexacontext_compiler_agent_endpoint),
+                "model_configured": bool(self.foundry_hexacontext_compiler_model),
+            },
+            "context_assisted_review_agent": {
+                "agent_id_configured": bool(self.foundry_context_review_agent_id),
+                "endpoint_configured": bool(self.foundry_context_review_agent_endpoint),
+                "model_configured": bool(self.foundry_context_review_model),
             },
             "configuration_issues": issues,
         }
@@ -254,6 +285,13 @@ class AppSettings(BaseSettings):
 
     def require_supabase_gateway(self) -> None:
         issues = self.supabase_configuration_issues()
+        if issues:
+            raise SupabaseConfigurationError(issues)
+
+    def require_supabase_evaluator(self) -> None:
+        issues = self.supabase_configuration_issues()
+        if not self.supabase_secret_key:
+            issues.append("SUPABASE_SECRET_KEY is required for the private evaluator")
         if issues:
             raise SupabaseConfigurationError(issues)
 

@@ -26,9 +26,20 @@ class ComparisonServiceTests(unittest.TestCase):
         self.assertEqual(result.controls.tool_contract_version, "1.0")
         self.assertEqual(result.controls.execution_mode, "SIMULATED_LOCAL")
         self.assertEqual(result.evaluation.status, EvaluationStatus.SCORED)
-        self.assertIsNone(result.baseline.context_packet_summary)
-        self.assertIsNotNone(result.hexacontext.context_packet_summary)
+        self.assertEqual(result.controls.workflow_id, "synthetic_material_deviation_readiness_v1")
+        self.assertEqual(result.controls.context_core_id, "manufacturing_context_core")
+        self.assertEqual(result.controls.context_core_version, "1.0")
+        self.assertIn("fragmented source", result.controls.independent_variable)
+        self.assertEqual(len(result.controls.controlled_invariants), 6)
+        self.assertEqual([role.role_key for role in result.agent_roles], [
+            "direct_review",
+            "hexacontext_compiler",
+            "context_assisted_review",
+        ])
+        self.assertIsNone(result.baseline.decision_packet_summary)
+        self.assertIsNotNone(result.hexacontext.decision_packet_summary)
         self.assertIsNot(result.baseline.evidence, result.hexacontext.evidence)
+        self.assertFalse(any(role.makes_final_decision for role in result.agent_roles))
 
     def test_enhanced_total_includes_both_model_stages(self) -> None:
         result = run_comparison(ComparisonRequest(lot_id="HX-V2-LOT-001"), persist=False)
@@ -40,10 +51,49 @@ class ComparisonServiceTests(unittest.TestCase):
             sum(stage.total_tokens or 0 for stage in stages),
         )
         self.assertGreater(result.deltas.total_tokens or 0, 0)
-        self.assertEqual(result.deltas.tool_calls, 0)
+        self.assertLess(result.deltas.tool_calls, 0)
         self.assertTrue(
-            all(item.stage == "baseline.retrieval" for item in result.baseline.tool_timeline)
+            all(item.stage == "baseline.direct_review" for item in result.baseline.tool_timeline)
         )
+        self.assertEqual(
+            [item.tool_name for item in result.hexacontext.tool_timeline],
+            [
+                "get_context_core_manifest",
+                "get_decision_profile_requirements",
+                "query_context_projection",
+            ],
+        )
+        self.assertNotEqual(
+            [item.tool_name for item in result.baseline.tool_timeline],
+            [item.tool_name for item in result.hexacontext.tool_timeline],
+        )
+
+    def test_governed_source_domains_projection_and_packet_only_assisted_agent(self) -> None:
+        result = run_comparison(ComparisonRequest(lot_id="HX-V2-LOT-001"), persist=False)
+        self.assertEqual(
+            {item.source_domain for item in result.hexacontext.evidence},
+            {
+                "MANUFACTURING_EXECUTION",
+                "QUALITY_MANAGEMENT",
+                "ENGINEERING_LIFECYCLE",
+                "EQUIPMENT_CALIBRATION",
+                "SUPPLIER_QUALITY",
+            },
+        )
+        packet = result.hexacontext.decision_packet_summary
+        self.assertIsNotNone(packet)
+        assert packet is not None
+        self.assertTrue(packet["human_authority_retained"])
+        self.assertEqual(packet["access_contract"], "CONTEXT_CORE_QUERY")
+        self.assertEqual(packet["projection_strategy"], "MINIMUM_SUFFICIENT")
+        self.assertEqual(packet["context_core_id"], "manufacturing_context_core")
+        self.assertEqual(packet["selected_evidence_count"], len(result.hexacontext.evidence))
+        self.assertGreater(packet["excluded_evidence_count"], 0)
+        self.assertTrue(all(item.relationship_path for item in result.hexacontext.evidence))
+        assisted = next(
+            role for role in result.agent_roles if role.role_key == "context_assisted_review"
+        )
+        self.assertEqual(assisted.tool_access, "DECISION_PACKET_ONLY")
 
     def test_hidden_evaluator_scores_missing_stale_conflict_and_leakage_cases(self) -> None:
         for lot_id in ("HX-V2-LOT-009", "HX-V2-LOT-011", "HX-V2-LOT-012", "HX-V2-LOT-014"):

@@ -73,9 +73,9 @@ function renderDeltaGrid(result) {
   const evalDelta = result.deltas.required_evidence_found;
   const cost = result.deltas.estimated_model_cost;
   const cards = [
-    ["Total tokens", signed(result.deltas.total_tokens), "Combined compiler + Manufacturing usage"],
+    ["Total tokens", signed(result.deltas.total_tokens), "Compiler + context-assisted review usage"],
     ["Model calls", signed(result.deltas.model_calls), "All continuation calls must be included live"],
-    ["Tool calls", signed(result.deltas.tool_calls), "Same approved read-only tool plane"],
+    ["Tool calls", signed(result.deltas.tool_calls), "Different governed access contracts over the same evidence universe"],
     ["End-to-end latency", signed(result.deltas.end_to_end_ms, " ms"), "Enhanced compile through validated decision"],
     ["Expected evidence", signed(evalDelta), "Additional expected source records found"],
     ["Valid citations", signed(result.deltas.valid_citations), "Additional resolvable authorized citations"],
@@ -122,7 +122,12 @@ function evidenceList(arm) {
   return arm.evidence.map((item) => `
     <li>
       <span class="evidence-class">${escapeHtml(humanize(item.evidence_class))}</span>
-      <div><strong>${escapeHtml(item.title)}</strong><small>${escapeHtml(item.source_record_id)} · ${escapeHtml(humanize(item.authority))}</small></div>
+      <div>
+        <strong>${escapeHtml(item.title)}</strong>
+        <small>${escapeHtml(humanize(item.source_domain))} · ${escapeHtml(item.source_table)} · ${escapeHtml(item.source_system)} · ${escapeHtml(item.source_record_id)}</small>
+        ${item.relationship_path?.length ? `<small>Path: ${item.relationship_path.map(humanize).map(escapeHtml).join(" → ")}</small>` : ""}
+        ${item.selection_reason ? `<small>Why selected: ${escapeHtml(item.selection_reason)}</small>` : ""}
+      </div>
     </li>
   `).join("");
 }
@@ -138,13 +143,18 @@ function timeline(arm) {
   `).join("");
 }
 
-function contextPacket(packet) {
+function decisionPacket(packet) {
   if (!packet) return "";
   return `
     <section class="packet-summary-card">
-      <div><span>ContextPacket</span><strong>${escapeHtml(packet.status)}</strong></div>
+      <div><span>Decision Packet</span><strong>${escapeHtml(packet.packet_status)}</strong></div>
       <dl>
-        <div><dt>Evidence</dt><dd>${packet.evidence_items}</dd></div>
+        <div><dt>Core</dt><dd>${escapeHtml(packet.context_core_id)} · v${escapeHtml(packet.context_core_version)}</dd></div>
+        <div><dt>Profile</dt><dd>${escapeHtml(packet.decision_profile_id)} · v${escapeHtml(packet.decision_profile_version)}</dd></div>
+        <div><dt>Projection</dt><dd>${escapeHtml(humanize(packet.projection_strategy))}</dd></div>
+        <div><dt>Core records</dt><dd>${Number(packet.core_snapshot_record_count || 0).toLocaleString()}</dd></div>
+        <div><dt>Selected</dt><dd>${packet.selected_evidence_count}</dd></div>
+        <div><dt>Excluded</dt><dd>${Number(packet.excluded_evidence_count || 0).toLocaleString()}</dd></div>
         <div><dt>Classes</dt><dd>${packet.evidence_classes}</dd></div>
         <div><dt>Stale</dt><dd>${packet.stale_records}</dd></div>
         <div><dt>Conflicts</dt><dd>${packet.conflicts}</dd></div>
@@ -179,16 +189,16 @@ function activityStep(number, title, detail, extra = "") {
 function renderAgentActivity(result) {
   const direct = result.baseline;
   const enhanced = result.hexacontext;
-  const packet = enhanced.context_packet_summary;
+  const packet = enhanced.decision_packet_summary;
   const caseLabel = state.cases.find((item) => item.lot_id === result.controls.lot_id)?.label
     || result.controls.lot_id;
   const shared = `${caseLabel} · ${result.controls.actor_label}`;
-  const controls = `Same snapshot, Decision Profile, Manufacturing Agent contract, business rules, and tool plane.`;
+  const controls = `Same evidence universe, snapshot, permissions, task, decision criteria, recommendation schema, and qualified-human authority.`;
   const directTags = `<div class="activity-tags">${evidenceClassTags(direct)}</div>`;
   const enhancedTags = `<div class="activity-tags">${evidenceClassTags(enhanced)}</div>`;
   const packetDetail = packet
-    ? `${packet.status} packet · ${packet.evidence_items} evidence items across ${packet.evidence_classes} classes · ${packet.missing_classes.length} missing · ${packet.stale_records} stale · ${packet.conflicts} conflicts.`
-    : "No ContextPacket was produced.";
+    ? `${packet.packet_status} packet · projected ${packet.selected_evidence_count} minimum-sufficient items from ${packet.core_snapshot_record_count} governed core records across ${packet.source_domains.length} source domains · ${packet.missing_classes.length} missing · ${packet.stale_records} stale · ${packet.conflicts} conflicts.`
+    : "No Decision Packet was produced.";
 
   $("#agent-activity").innerHTML = `
     <div class="activity-shared">
@@ -197,29 +207,29 @@ function renderAgentActivity(result) {
     </div>
     <article class="activity-lane direct-activity">
       <header>
-        <div><span>A · Foundry Direct</span><h3>Manufacturing Agent gathers context and decides</h3></div>
+        <div><span>Agent 1 · Direct arm</span><h3>Direct Review Agent gathers context and recommends readiness</h3></div>
         <b>One agent</b>
       </header>
       <ol>
         ${activityStep(1, "Receives the controlled request", `The lot, actor, snapshot, and ${result.controls.decision_profile_id} profile are fixed by the backend.`)}
-        ${activityStep(2, "Retrieves and evaluates authorized evidence", `The Manufacturing path runs ${direct.metrics.tool_calls} approved tool operations and receives ${direct.metrics.returned_records} source-backed records.`, directTags)}
+        ${activityStep(2, "Queries fragmented source domains", `The direct path runs ${direct.metrics.tool_calls} source-specific tool operations and must reconcile ${direct.metrics.returned_records} source-backed records itself.`, directTags)}
         ${activityStep(3, `Returns ${direct.decision.disposition}`, `${direct.decision.summary} It provides ${direct.decision.citations.length} citations and reports ${findingCountSummary(direct.findings)}.`)}
       </ol>
-      <div class="activity-boundary"><span>Direct handoff</span><strong>Authorized evidence → ManufacturingDecision</strong></div>
+      <div class="activity-boundary"><span>Human handoff</span><strong>Authorized evidence → ReadinessRecommendation → qualified reviewer</strong></div>
     </article>
     <article class="activity-lane enhanced-activity">
       <header>
-        <div><span>B · With HexaContext</span><h3>HexaContext prepares context; Manufacturing decides</h3></div>
+        <div><span>Agents 2 + 3 · With HexaContext</span><h3>Compiler prepares the packet; assisted reviewer recommends readiness</h3></div>
         <b>Two agents</b>
       </header>
       <ol>
-        ${activityStep(1, "HexaContext compiles the evidence", `It runs ${enhanced.metrics.tool_calls} approved tool operations and organizes ${enhanced.metrics.returned_records} authorized records for this decision.`, enhancedTags)}
-        ${activityStep(2, "Builds the ContextPacket", packetDetail)}
-        ${activityStep(3, `The same Manufacturing Agent returns ${enhanced.decision.disposition}`, `It reasons over the packet, provides ${enhanced.decision.citations.length} citations, and reports ${findingCountSummary(enhanced.findings)}.`)}
+        ${activityStep(1, "Compiler reads the Context Core + Decision Profile", `It runs ${enhanced.metrics.tool_calls} context-provider operations against ${result.controls.context_core_id} v${result.controls.context_core_version} and applies ${result.controls.decision_profile_id} v${result.controls.decision_profile_version}.`, enhancedTags)}
+        ${activityStep(2, "Builds the Decision Packet", packetDetail)}
+        ${activityStep(3, `Context-Assisted Review Agent returns ${enhanced.decision.disposition}`, `It receives only the packet, provides ${enhanced.decision.citations.length} citations, and reports ${findingCountSummary(enhanced.findings)}.`)}
       </ol>
-      <div class="activity-boundary"><span>Enhanced handoff</span><strong>Authorized evidence → ContextPacket → ManufacturingDecision</strong></div>
+      <div class="activity-boundary"><span>Human handoff</span><strong>Authorized evidence → Decision Packet → ReadinessRecommendation → qualified reviewer</strong></div>
     </article>
-    <p class="activity-note"><strong>What changed:</strong> the enhanced path adds context compilation and a typed packet. <strong>What did not:</strong> the request, permissions, source snapshot, tools, decision rules, and Manufacturing Agent contract.</p>
+    <p class="activity-note"><strong>Independent variable:</strong> ${escapeHtml(result.controls.independent_variable)} <strong>What did not change:</strong> ${escapeHtml(result.controls.controlled_invariants.join(", "))}.</p>
   `;
 }
 
@@ -235,7 +245,7 @@ function renderArm(target, arm, evaluation) {
     </header>
     <div class="arm-body">
       <p class="decision-summary">${escapeHtml(arm.decision.summary)}</p>
-      ${contextPacket(arm.context_packet_summary)}
+      ${decisionPacket(arm.decision_packet_summary)}
       <div class="metric-cards">
         <div><span>Expected sources</span><strong>${evaluation ? `${evaluation.required_evidence_found}/${evaluation.required_evidence_total}` : "—"}</strong></div>
         <div><span>Valid citations</span><strong>${evaluation ? `${evaluation.valid_citations}/${evaluation.citation_count}` : "—"}</strong></div>
@@ -330,6 +340,7 @@ function renderComparison(result) {
   $("#actor-label").textContent = result.controls.actor_label;
   $("#snapshot-label").textContent = result.controls.snapshot_id;
   $("#profile-label").textContent = `${result.controls.decision_profile_id} · v${result.controls.decision_profile_version}`;
+  $("#core-label").textContent = `${result.controls.context_core_id} · v${result.controls.context_core_version}`;
   const [verdict, detail] = determineVerdict(result);
   $("#run-verdict").textContent = verdict;
   $("#run-verdict-detail").textContent = detail;
@@ -349,7 +360,7 @@ async function runComparison() {
     const result = await api("/api/comparisons", {
       method: "POST",
       body: JSON.stringify({
-        task: "Assess manufacturing lot disposition readiness",
+        task: "Assess material-deviation disposition readiness",
         lot_id: $("#case-select").value,
         decision_profile_id: "manufacturing_lot_disposition_v1",
         hexacontext_mode: "hydrate",

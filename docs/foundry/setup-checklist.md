@@ -105,7 +105,7 @@ python3 -m pip install -r requirements.txt
 
 ## 6. Implement the shared tool gateway
 
-- [x] Implement the seven [`tool-contracts.md`](tool-contracts.md) operations as security-invoker PostgreSQL functions plus a typed backend gateway.
+- [x] Implement the seven original [`tool-contracts.md`](tool-contracts.md) operations plus eight v2 relationship operations as security-invoker PostgreSQL functions and a typed backend gateway.
 - [x] Bind subject, snapshot and time server-side; derive tenant/scopes only from the approved user JWT.
 - [x] Implement immutable snapshot/as-of behavior.
 - [x] Implement hard result, relationship-depth and query-size limits.
@@ -114,6 +114,8 @@ python3 -m pip install -r requirements.txt
 - [x] Exclude unauthorized data through RLS before model invocation.
 - [x] Mark retrieved note text as untrusted evidence and preserve the prompt-injection test record as data.
 - [x] Verify `anon` has no access and authenticated actors receive no write grants or policies.
+- [x] Deploy the 2,000-lot / 40,295-row v2 context graph and all 50 private expected-result rubrics.
+- [x] Add a service-role-only evaluator endpoint and private trace ledger that neither agent can execute or read.
 - [ ] Provision approved Supabase Auth identities and exercise the gateway end to end with real short-lived user JWTs.
 - [ ] Publish the narrow operations to the saved Foundry agents and implement the function-call execution loop.
 - [ ] Use the same implementation for baseline and HexaContext arms.
@@ -135,7 +137,7 @@ Optional bounded graph projection
   only after relational baseline and graph lift are measured
 ```
 
-The dedicated `hexacontext` Supabase project now contains the versioned runtime schema, 15 cases plus one shadow lot, RLS, full-text search and separately seeded private answer key from [`../supabase-synthetic-dataset-v1.md`](../supabase-synthetic-dataset-v1.md). The pre-tagged JSON `signals` were not copied into Supabase.
+The dedicated `hexacontext` Supabase project contains the preserved v1 control snapshot plus the primary v2 benchmark: 2,000 lots, 40,295 normalized runtime rows, 50 private evaluated cases, RLS, full-text search and separately seeded answer keys. See [`../supabase-context-benchmark-v2.md`](../supabase-context-benchmark-v2.md). The pre-tagged JSON `signals` were not copied into Supabase.
 
 ## 7. Implement the agents
 

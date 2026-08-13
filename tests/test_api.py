@@ -54,6 +54,11 @@ class ApiTests(unittest.IsolatedAsyncioTestCase):
             self.assertEqual(response.status_code, 200)
             self.assertNotIn("expected_disposition", response.text)
 
+    async def test_private_evaluator_endpoint_is_disabled_without_operator_token(self) -> None:
+        response = await self.client.get("/api/evaluator/cases/lot-alpha-0001")
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn("expected_disposition", response.text)
+
     async def test_unconfigured_foundry_fails_without_mock_fallback(self) -> None:
         with patch.dict(
             os.environ,

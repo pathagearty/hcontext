@@ -15,6 +15,7 @@ from data.generate_supabase_v1 import (
 )
 
 from .comparison_models import (
+    AgentRoleSummary,
     ArmAggregate,
     ArmEvaluation,
     ArmMetrics,
@@ -36,19 +37,55 @@ from .comparison_models import (
     StageMetric,
     ToolTraceItem,
 )
+from .context_providers import (
+    CONTEXT_CORE_ID,
+    CONTEXT_CORE_VERSION,
+    FragmentedSourceToolPlane,
+    ManufacturingContextCoreProvider,
+    runtime_dataset,
+)
 from .pricing import estimate_model_cost
 from .supabase_gateway import TOOL_CONTRACT_VERSION
 from .telemetry import NormalizedUsage, simulated_usage
 
 
 _RUNS: dict[str, ComparisonResult] = {}
-_AUTHORIZED_SCOPES = frozenset({"quality", "general"})
+_WORKFLOW_ID = "synthetic_material_deviation_readiness_v1"
+
+_AGENT_ROLES = [
+    AgentRoleSummary(
+        role_key="direct_review",
+        label="Direct Review Agent",
+        arm="DIRECT",
+        responsibility="Gather and reconcile authorized evidence through fragmented source-domain tools, then recommend PASS, HOLD, or ESCALATE readiness.",
+        input_contract="ContextRequest plus fragmented source-domain tools",
+        tool_access="FRAGMENTED_SOURCE_TOOLS",
+        output_contract="ReadinessRecommendation",
+    ),
+    AgentRoleSummary(
+        role_key="hexacontext_compiler",
+        label="HexaContext Compiler Agent",
+        arm="WITH_HEXACONTEXT",
+        responsibility="Apply a reusable Decision Profile to the persistent Manufacturing Context Core and compile a validated, source-linked Decision Packet without making final disposition.",
+        input_contract="ContextRequest plus Decision Profile plus Manufacturing Context Core query contract",
+        tool_access="CONTEXT_CORE_QUERY",
+        output_contract="DecisionPacket",
+    ),
+    AgentRoleSummary(
+        role_key="context_assisted_review",
+        label="Context-Assisted Review Agent",
+        arm="WITH_HEXACONTEXT",
+        responsibility="Analyze the DecisionPacket and recommend PASS, HOLD, or ESCALATE readiness.",
+        input_contract="DecisionPacket only",
+        tool_access="DECISION_PACKET_ONLY",
+        output_contract="ReadinessRecommendation",
+    ),
+]
 
 
 @lru_cache(maxsize=1)
 def _runtime_dataset() -> dict[str, list[dict[str, Any]]]:
-    runtime, _ = build_dataset()
-    return runtime
+    return runtime_dataset()
 
 
 @lru_cache(maxsize=1)
@@ -71,102 +108,6 @@ def comparison_cases() -> list[ComparisonCase]:
 
 def _iso(value: str) -> datetime:
     return datetime.fromisoformat(value.replace("Z", "+00:00"))
-
-
-def _authorized(row: dict[str, Any]) -> bool:
-    return row.get("tenant_id") == PRIMARY_TENANT and set(row.get("required_scopes", [])) <= _AUTHORIZED_SCOPES
-
-
-def _rows(table: str, **matches: Any) -> list[dict[str, Any]]:
-    return [
-        row
-        for row in _runtime_dataset()[table]
-        if _authorized(row) and all(row.get(key) == value for key, value in matches.items())
-    ]
-
-
-_EVIDENCE_TITLES = {
-    "lot_record": "Manufacturing lot record",
-    "final_inspection": "Final inspection",
-    "certificate_of_analysis": "Certificate of analysis",
-    "equipment_calibration": "Equipment calibration",
-    "released_revision_alignment": "Released engineering revision",
-    "supplier_part_family_history": "Supplier quality history",
-    "open_deviation_check": "Connected deviation",
-    "authorized_narrative_conflict_check": "Authorized manufacturing note",
-}
-
-
-def _evidence(evidence_class: str, row: dict[str, Any]) -> EvidenceSummary:
-    return EvidenceSummary(
-        evidence_class=evidence_class,
-        source_record_id=row["source_record_id"],
-        title=_EVIDENCE_TITLES[evidence_class],
-        authority=row["authority"],
-        observed_at=row["observed_at"],
-    )
-
-
-def _collect_case(lot_id: str) -> tuple[dict[str, Any], list[EvidenceSummary], list[tuple[str, int]]]:
-    lots = _rows("manufacturing_lots", lot_id=lot_id)
-    if len(lots) != 1:
-        raise KeyError(lot_id)
-    lot = lots[0]
-    inspections = _rows("inspections", lot_id=lot_id)
-    certificates = _rows("certificates_of_analysis", lot_id=lot_id)
-    calibrations = _rows("calibration_records", equipment_id=lot["inspection_equipment_id"])
-    revisions = _rows("engineering_revisions", part_id=lot["part_id"])
-    supplier_events = _rows(
-        "supplier_quality_events",
-        supplier_id=lot["supplier_id"],
-        part_id=lot["part_id"],
-    )
-    deviations = [
-        row
-        for row in _rows("deviations")
-        if row.get("lot_id") == lot_id
-        or row.get("part_id") == lot["part_id"]
-        or row.get("supplier_id") == lot["supplier_id"]
-        or row.get("equipment_id") == lot["inspection_equipment_id"]
-    ]
-    notes = [
-        row
-        for row in _rows("manufacturing_notes")
-        if row.get("lot_id") == lot_id
-        or row.get("part_id") == lot["part_id"]
-        or row.get("equipment_id") == lot["inspection_equipment_id"]
-    ]
-
-    evidence = [_evidence("lot_record", lot)]
-    evidence.extend(_evidence("final_inspection", row) for row in inspections)
-    evidence.extend(_evidence("certificate_of_analysis", row) for row in certificates)
-    evidence.extend(_evidence("equipment_calibration", row) for row in calibrations)
-    evidence.extend(_evidence("released_revision_alignment", row) for row in revisions)
-    evidence.extend(_evidence("supplier_part_family_history", row) for row in supplier_events)
-    evidence.extend(_evidence("open_deviation_check", row) for row in deviations if row["status"] == "OPEN")
-    evidence.extend(_evidence("authorized_narrative_conflict_check", row) for row in notes)
-    evidence.sort(key=lambda item: (item.evidence_class, item.source_record_id))
-
-    tool_counts = [
-        ("get_decision_profile", 1),
-        ("get_lot_record", 1 + len(inspections) + len(certificates)),
-        ("get_supplier_quality_history", len(supplier_events)),
-        ("get_equipment_calibration", len(calibrations)),
-        ("get_released_part_revision", len(revisions)),
-        ("get_open_deviations", len([row for row in deviations if row["status"] == "OPEN"])),
-        ("search_manufacturing_notes", len(notes)),
-    ]
-    detail = {
-        "lot": lot,
-        "inspections": inspections,
-        "certificates": certificates,
-        "calibrations": calibrations,
-        "revisions": revisions,
-        "supplier_events": supplier_events,
-        "deviations": deviations,
-        "notes": notes,
-    }
-    return detail, evidence, tool_counts
 
 
 def _decision(detail: dict[str, Any], evidence: list[EvidenceSummary]) -> tuple[DecisionSummary, FindingSummary]:
@@ -305,22 +246,32 @@ def _arm(
     *,
     enhanced: bool,
 ) -> ComparisonArmResult:
-    detail, evidence, tool_counts = _collect_case(request.lot_id)
+    access = (
+        ManufacturingContextCoreProvider().compile_case(
+            request.lot_id,
+            request.decision_profile_id,
+        )
+        if enhanced
+        else FragmentedSourceToolPlane().collect_case(request.lot_id)
+    )
+    detail = access.detail
+    evidence = access.evidence
+    tool_counts = access.tool_counts
     decision, findings = _decision(detail, evidence)
     evidence_text = "|".join(item.source_record_id for item in evidence)
     tool_time = sum(2 + count for _, count in tool_counts)
 
     if enhanced:
-        packet_text = f"ContextPacket:{request.lot_id}:{evidence_text}:{findings.model_dump_json()}"
+        packet_text = f"DecisionPacket:{request.lot_id}:{evidence_text}:{findings.model_dump_json()}"
         compiler_usage = simulated_usage(request.task + evidence_text, packet_text)
-        manufacturing_usage = simulated_usage(request.task + packet_text, decision.model_dump_json())
-        usage = _combine_usage(compiler_usage, manufacturing_usage)
+        review_usage = simulated_usage(request.task + packet_text, decision.model_dump_json())
+        usage = _combine_usage(compiler_usage, review_usage)
         compiler_ms = 12 + (compiler_usage.total_tokens or 0) // 40
-        manufacturing_ms = 10 + (manufacturing_usage.total_tokens or 0) // 40
+        review_ms = 10 + (review_usage.total_tokens or 0) // 40
         stages = [
             StageMetric(
-                stage="enhanced.hexacontext",
-                label="HexaContext compile",
+                stage="enhanced.hexacontext_compiler",
+                label="HexaContext Compiler Agent",
                 model_calls=1,
                 tool_calls=len(tool_counts),
                 input_tokens=compiler_usage.input_tokens,
@@ -329,52 +280,76 @@ def _arm(
                 elapsed_ms=compiler_ms + tool_time,
             ),
             StageMetric(
-                stage="enhanced.manufacturing",
-                label="Manufacturing reasoning",
+                stage="enhanced.context_review",
+                label="Context-Assisted Review Agent",
                 model_calls=1,
-                input_tokens=manufacturing_usage.input_tokens,
-                output_tokens=manufacturing_usage.output_tokens,
-                total_tokens=manufacturing_usage.total_tokens,
-                elapsed_ms=manufacturing_ms,
+                input_tokens=review_usage.input_tokens,
+                output_tokens=review_usage.output_tokens,
+                total_tokens=review_usage.total_tokens,
+                elapsed_ms=review_ms,
             ),
         ]
-        context_packet = {
-            "status": "COMPLETE" if not findings.missing else "INCOMPLETE",
+        packet_status = (
+            "INCOMPLETE"
+            if findings.missing or findings.stale
+            else "CONFLICTED"
+            if findings.conflicts
+            else "VALIDATED"
+        )
+        projection = access.projection_metadata or {}
+        decision_packet = {
+            "packet_status": packet_status,
+            "subject_type": "manufacturing_lot",
+            "subject_lot_id": request.lot_id,
+            "context_core_id": projection.get("context_core_id"),
+            "context_core_version": projection.get("context_core_version"),
+            "persistence_model": projection.get("persistence_model"),
+            "decision_profile_id": projection.get("decision_profile_id"),
+            "decision_profile_version": projection.get("decision_profile_version"),
+            "projection_strategy": projection.get("projection_strategy"),
+            "core_snapshot_record_count": projection.get("core_snapshot_record_count", 0),
+            "selected_evidence_count": projection.get("selected_evidence_count", len(evidence)),
+            "excluded_evidence_count": projection.get("excluded_evidence_count", 0),
+            "satisfied_requirement_keys": projection.get("satisfied_requirement_keys", []),
+            "relationship_paths": projection.get("relationship_paths", []),
             "evidence_items": len(evidence),
             "evidence_classes": len({item.evidence_class for item in evidence}),
+            "source_domains": sorted({item.source_domain for item in evidence}),
             "missing_classes": findings.missing,
             "stale_records": len(findings.stale),
             "conflicts": len(findings.conflicts),
+            "access_contract": access.access_contract,
+            "human_authority_retained": True,
         }
         label = "With HexaContext"
-        stage_name = "enhanced.hexacontext"
-        model_time = compiler_ms + manufacturing_ms
+        stage_name = "enhanced.hexacontext_compiler"
+        model_time = compiler_ms + review_ms
         model_calls = 2
     else:
         direct_usage = simulated_usage(request.task + evidence_text, decision.model_dump_json())
         usage = direct_usage
-        manufacturing_ms = 12 + (direct_usage.total_tokens or 0) // 40
+        direct_ms = 12 + (direct_usage.total_tokens or 0) // 40
         stages = [
             StageMetric(
-                stage="baseline.retrieval",
-                label="Direct retrieval",
+                stage="baseline.direct_review",
+                label="Direct Review Agent · retrieval",
                 tool_calls=len(tool_counts),
                 elapsed_ms=tool_time,
             ),
             StageMetric(
-                stage="baseline.manufacturing",
-                label="Manufacturing reasoning",
+                stage="baseline.direct_review",
+                label="Direct Review Agent · analysis",
                 model_calls=1,
                 input_tokens=direct_usage.input_tokens,
                 output_tokens=direct_usage.output_tokens,
                 total_tokens=direct_usage.total_tokens,
-                elapsed_ms=manufacturing_ms,
+                elapsed_ms=direct_ms,
             ),
         ]
-        context_packet = None
-        label = "Foundry Direct"
-        stage_name = "baseline.retrieval"
-        model_time = manufacturing_ms
+        decision_packet = None
+        label = "Direct Review Agent"
+        stage_name = "baseline.direct_review"
+        model_time = direct_ms
         model_calls = 1
 
     # Exercise the estimator contract without presenting an invented simulation price.
@@ -408,10 +383,14 @@ def _arm(
             stages=stages,
             estimated_model_cost=cost,
         ),
-        context_packet_summary=context_packet,
+        decision_packet_summary=decision_packet,
         limitations=[
-            "Local deterministic simulation; no Foundry model was invoked.",
-            "Tool activity is a local preview of the approved Supabase contracts; the remote Data API was not invoked.",
+            "Local deterministic simulation; none of the three Foundry agents was invoked.",
+            (
+                "The Direct arm used the FragmentedSourceToolPlane preview; the assisted arm used "
+                "the ManufacturingContextCoreProvider projection contract."
+            ),
+            "The provider contracts execute over the same generated immutable snapshot; remote Supabase RPC latency is not represented.",
             "Token and latency values validate the UI contract and are not provider telemetry.",
         ],
     )
@@ -504,6 +483,7 @@ def run_comparison(request: ComparisonRequest, *, persist: bool = True) -> Compa
     result = ComparisonResult(
         comparison_run_id=str(uuid.uuid4()),
         status=RunStatus.COMPLETED,
+        agent_roles=_AGENT_ROLES,
         controls=FrozenControls(
             normalized_task=normalized_task,
             request_hash=request_hash,
@@ -517,7 +497,22 @@ def run_comparison(request: ComparisonRequest, *, persist: bool = True) -> Compa
             as_of_time=snapshot["as_of_time"],
             decision_profile_id=profile["profile_id"],
             decision_profile_version=profile["profile_version"],
+            context_core_id=CONTEXT_CORE_ID,
+            context_core_version=CONTEXT_CORE_VERSION,
             tool_contract_version=TOOL_CONTRACT_VERSION,
+            workflow_id=_WORKFLOW_ID,
+            independent_variable=(
+                "Context assembly: fragmented source reconciliation versus Decision Profile projection "
+                "from the persistent Manufacturing Context Core."
+            ),
+            controlled_invariants=[
+                "same synthetic case",
+                "same immutable evidence universe",
+                "same actor permissions",
+                "same task and decision criteria",
+                "same recommendation contract",
+                "same qualified-human final authority",
+            ],
             execution_mode="SIMULATED_LOCAL",
         ),
         baseline=baseline,
@@ -550,7 +545,7 @@ def run_comparison(request: ComparisonRequest, *, persist: bool = True) -> Compa
             round((time.perf_counter() - started) * 1000),
         ),
         limitations=[
-            "Synthetic benchmark with 15 designed cases; do not interpret as production accuracy.",
+            "Synthetic, Seagate-inspired benchmark with 15 designed cases; it does not describe or measure Seagate's internal workflow.",
             "This computer is showing a local deterministic comparison preview because Foundry is not configured.",
             "Tool traces execute against the generated local snapshot, not the remote Supabase Data API.",
             "Estimated model cost remains unavailable until an approved deployment-specific pricing catalog is configured.",
@@ -616,7 +611,9 @@ def evaluation_summary() -> EvaluationSummary:
             estimated_model_cost=None,
         ),
         note=(
-            "Local contract preview: both arms receive the same complete authorized evidence, so it does not "
-            "manufacture a HexaContext quality advantage. Foundry runs are required for a model-performance claim."
+            "Local architecture/contract preview: the Direct arm reconciles fragmented source-domain results; "
+            "the assisted arm compiles a minimum-sufficient projection from the shared Context Core. Both use "
+            "the same immutable authorized facts and deterministic rules, so Foundry runs remain required for a "
+            "model-performance claim."
         ),
     )

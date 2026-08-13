@@ -16,7 +16,7 @@ from .settings import AppSettings, FoundryAgentConfig
 
 
 FOUNDRY_TOKEN_SCOPE = "https://ai.azure.com/.default"
-AgentName = Literal["manufacturing", "hexacontext"]
+AgentName = Literal["direct_review", "hexacontext_compiler", "context_assisted_review"]
 ResponseInput = str | list[dict[str, Any]]
 _SCHEMA_NAME = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
 _TRANSIENT_STATUS_CODES = {429, 500, 502, 503, 504}

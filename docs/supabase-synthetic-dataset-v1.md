@@ -18,9 +18,9 @@ The database/data portion of this specification is implemented and deployed to t
 - `supabase/seed.sql` contains runtime records only, while `supabase/seed_evaluator.sql` is applied separately through the trusted evaluator/admin path;
 - the fixed snapshot is `hx-mfg-v1-snapshot-001`, with manifest hash `4a69bc05efbb8e72d2f0e98d3417324f49c9be3c98ef42818c73efeff1a8a3d9`;
 - a clean local reset, local and remote tenant/scope claim tests, all seven remote operations, full-text search, schema lint and remote security/performance advisors pass;
-- 41 repository tests pass, including deterministic generation, prohibited-field checks, gateway binding, no-match/error separation and secret-key rejection.
+- the combined v1+v2 repository suite now has 61 passing tests; v1 deterministic generation, prohibited-field checks, gateway binding, no-match/error separation and secret-key rejection remain covered.
 
-Still pending before a live two-agent comparison: approved Supabase Auth demo identities and a real user-JWT Data API gateway test, Foundry tool-loop integration, ContextPacket/comparison orchestration and qualified manufacturing review. Database claim tests used the actual `authenticated` role and JWT claim shape locally and remotely; they did not mint a production/demo user token.
+Still pending before a live three-agent comparison: approved Supabase Auth demo identities and a real user-JWT Data API gateway test, Foundry tool-loop integration, live Decision Packet/comparison orchestration and qualified manufacturing review. Database claim tests used the actual `authenticated` role and JWT claim shape locally and remotely; they did not mint a production/demo user token. The canonical current architecture is in [`handoff-context-packet.md`](handoff-context-packet.md).
 
 ## Executive recommendation
 
@@ -37,7 +37,7 @@ That is enough for the initial engineering test because it covers:
 - cross-tenant isolation;
 - prompt injection inside retrieved text.
 
-Fifteen cases are still a smoke/evaluation-development set—not a production accuracy benchmark. Expand only after the two-agent workflow, schemas, tools and hidden evaluator are stable.
+Fifteen cases are still a smoke/evaluation-development set—not a production accuracy benchmark. Expand only after the three-role workflow, schemas, access contracts and hidden evaluator are stable.
 
 ## Critical design change from the current demo
 
@@ -1101,7 +1101,7 @@ Tool failures such as timeouts and rate limits should be injected by the tool ga
 
 ## Implementation completion gate
 
-The Supabase dataset is ready for the two-agent comparison only when:
+The Supabase dataset is ready for the live three-agent comparison only when:
 
 - [x] migrations and separate runtime/evaluator seed files are versioned locally and ready for Git review;
 - [x] local `supabase db reset` succeeds from a clean state;

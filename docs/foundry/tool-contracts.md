@@ -289,6 +289,54 @@ The model can interpret `content`; the backend verifies source identifiers, hash
 - preserve document ID, version, timestamp and signer/authority where approved;
 - sanitize active content and do not execute embedded links/code.
 
+## V2 relationship catalog
+
+Snapshot `hx-mfg-v2-snapshot-001` adds eight atomic operations. Their exact
+SQL and argument names are versioned in
+[`../../supabase/migrations/20260807154132_create_context_graph_tools_v2.sql`](../../supabase/migrations/20260807154132_create_context_graph_tools_v2.sql).
+
+### 8. `get_lot_work_orders`
+
+Returns at most ten work orders connected to the server-bound subject lot.
+
+### 9. `get_work_order_operations`
+
+Returns at most twenty ordered operations after proving the exact work order is
+connected to the subject lot.
+
+### 10. `get_operation_equipment_usage`
+
+Returns at most ten equipment-usage records after proving the exact operation is
+connected through the subject lot's work order.
+
+### 11. `get_connected_equipment_calibration`
+
+Returns current calibration records only for equipment reached through the
+subject lot's work-order/operation genealogy.
+
+### 12. `get_part_bom`
+
+Returns at most twenty effective BOM lines for the subject lot's exact part and
+observed revision at the pinned time.
+
+### 13. `get_lot_component_usage`
+
+Returns at most ten consumption records after proving the BOM line belongs to
+the subject lot's part.
+
+### 14. `get_material_batch_records`
+
+Returns the connected material batch and its certificate only after proving the
+batch was consumed by the subject lot.
+
+### 15. `get_engineering_change_orders`
+
+Returns at most ten time-bounded change orders for the subject lot's exact part.
+
+These operations preserve the v1 `1.0` envelope contract; adding operations is
+backward-compatible. Any semantic or response-shape change still requires a
+contract-version increment. Tenant and scopes are never model arguments.
+
 ## Optional internal assembler operations
 
 These are backend operations, not model tools:
